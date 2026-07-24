@@ -12,4 +12,9 @@ urlpatterns = [
         views.disconnect_profile,
         name="disconnect_profile",
     ),
+    path(
+        "<int:pk>/boards/",
+        views.pinterest_board_options,
+        name="pinterest_board_options",
+    ),
 ]

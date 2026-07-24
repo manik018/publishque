@@ -41,6 +41,12 @@ def new_post(request):
                             post=post,
                             connected_profile=profile,
                             scheduled_time=scheduled_time,
+                            board_id=request.POST.get(f"board_id_{profile.pk}", "")
+                            or None,
+                            board_name=request.POST.get(
+                                f"board_name_{profile.pk}", ""
+                            )
+                            or None,
                         )
                         for profile in connected_profiles
                     ]

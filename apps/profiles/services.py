@@ -1,0 +1,98 @@
+import logging
+
+import requests
+from allauth.socialaccount.models import SocialToken
+from django.conf import settings
+from django.utils import timezone
+
+
+logger = logging.getLogger("publishque.profiles.services")
+PINTEREST_TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
+PINTEREST_BOARDS_URL = "https://api.pinterest.com/v5/boards"
+
+
+class PinterestTokenError(Exception):
+    pass
+
+
+class PinterestBoardFetchError(Exception):
+    pass
+
+
+def get_social_token(connected_profile):
+    try:
+        return SocialToken.objects.get(account=connected_profile.social_account)
+    except SocialToken.DoesNotExist as exc:
+        raise PinterestTokenError("Pinterest token not found. Reconnect the account.") from exc
+
+
+def token_needs_refresh(social_token):
+    if not social_token.expires_at:
+        return False
+    return social_token.expires_at <= timezone.now() + timezone.timedelta(minutes=5)
+
+
+def get_valid_pinterest_token(connected_profile):
+    social_token = get_social_token(connected_profile)
+    if not token_needs_refresh(social_token):
+        return social_token.token
+
+    if not social_token.token_secret:
+        raise PinterestTokenError("Pinterest refresh token is missing. Reconnect the account.")
+
+    response = requests.post(
+        PINTEREST_TOKEN_URL,
+        data={
+            "grant_type": "refresh_token",
+            "refresh_token": social_token.token_secret,
+        },
+        auth=(
+            settings.SOCIALACCOUNT_PROVIDERS["pinterest"]["APP"]["client_id"],
+            settings.SOCIALACCOUNT_PROVIDERS["pinterest"]["APP"]["secret"],
+        ),
+        timeout=15,
+    )
+    if not response.ok:
+        logger.warning(
+            "Pinterest token refresh failed for connected profile %s: %s",
+            connected_profile.pk,
+            response.text,
+        )
+        raise PinterestTokenError("Pinterest token refresh failed. Reconnect the account.")
+
+    data = response.json()
+    access_token = data.get("access_token")
+    if not access_token:
+        raise PinterestTokenError("Pinterest token refresh response did not include an access token.")
+
+    social_token.token = access_token
+    if data.get("refresh_token"):
+        social_token.token_secret = data["refresh_token"]
+    expires_in = data.get("expires_in")
+    if expires_in:
+        social_token.expires_at = timezone.now() + timezone.timedelta(seconds=int(expires_in))
+    social_token.save(update_fields=["token", "token_secret", "expires_at"])
+    return social_token.token
+
+
+def fetch_pinterest_boards(connected_profile):
+    token = get_valid_pinterest_token(connected_profile)
+    response = requests.get(
+        PINTEREST_BOARDS_URL,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=15,
+    )
+    if not response.ok:
+        logger.warning(
+            "Pinterest board fetch failed for connected profile %s: %s",
+            connected_profile.pk,
+            response.text,
+        )
+        raise PinterestBoardFetchError("Could not load Pinterest boards. Reconnect the account and try again.")
+
+    items = response.json().get("items", [])
+    return [
+        {"id": item["id"], "name": item.get("name", "Untitled board")}
+        for item in items
+        if item.get("id")
+    ]

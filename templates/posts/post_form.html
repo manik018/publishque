@@ -17,6 +17,14 @@
         {% endif %}
 
         <div>
+            <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-slate-900">Title</label>
+            <div class="mt-1">{{ form.title }}</div>
+            {% for error in form.title.errors %}
+                <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div>
             <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-slate-900">Content</label>
             <div class="mt-1">{{ form.content }}</div>
             {% for error in form.content.errors %}
@@ -42,9 +50,18 @@
                             <div class="mt-3 space-y-2">
                                 {% for profile in profiles %}
                                     <label class="flex items-center gap-2 text-sm text-slate-700">
-                                        <input type="checkbox" name="connected_profiles" value="{{ profile.pk }}" class="rounded border-slate-300 text-primary">
+                                        <input type="checkbox" name="connected_profiles" value="{{ profile.pk }}" class="rounded border-slate-300 text-primary"
+                                               {% if profile.platform == "pinterest" %}
+                                               hx-get="{% url 'profiles:pinterest_board_options' profile.pk %}"
+                                               hx-target="#board-selector-{{ profile.pk }}"
+                                               hx-swap="innerHTML"
+                                               {% endif %}>
                                         <span>{{ profile.display_name }}</span>
                                     </label>
+                                    {% if profile.platform == "pinterest" %}
+                                        <div id="board-selector-{{ profile.pk }}" class="ml-6 mt-2"></div>
+                                        <input type="hidden" name="board_name_{{ profile.pk }}" id="board-name-{{ profile.pk }}">
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
@@ -100,6 +117,19 @@
                     alert("Scheduled time must be in the future.");
                 }
             }
+        });
+
+        form.addEventListener("change", (event) => {
+            if (!event.target.matches("select[name^='board_id_']")) {
+                return;
+            }
+            const profileId = event.target.name.replace("board_id_", "");
+            const boardNameInput = document.getElementById(`board-name-${profileId}`);
+            if (!boardNameInput) {
+                return;
+            }
+            const selectedOption = event.target.selectedOptions[0];
+            boardNameInput.value = selectedOption ? selectedOption.dataset.boardName || selectedOption.textContent : "";
         });
     });
 </script>

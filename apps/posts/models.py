@@ -8,6 +8,7 @@ class Post(models.Model):
         on_delete=models.CASCADE,
         related_name="posts",
     )
+    title = models.CharField(max_length=120, blank=True)
     content = models.TextField()
     media = models.FileField(upload_to="posts/%Y/%m/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -38,6 +39,8 @@ class PostTarget(models.Model):
         related_name="post_targets",
     )
     scheduled_time = models.DateTimeField()
+    board_id = models.CharField(max_length=255, blank=True, null=True)
+    board_name = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,

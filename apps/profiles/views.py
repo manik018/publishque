@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import ConnectedProfile
+from .services import PinterestBoardFetchError, PinterestTokenError, fetch_pinterest_boards
 
 
 @login_required
@@ -36,4 +37,30 @@ def disconnect_profile(request, pk):
         request,
         "profiles/disconnect_confirm.html",
         {"connected_profile": connected_profile},
+    )
+
+
+@login_required
+def pinterest_board_options(request, pk):
+    connected_profile = get_object_or_404(
+        ConnectedProfile,
+        pk=pk,
+        user=request.user,
+        platform=ConnectedProfile.Platform.PINTEREST,
+    )
+    try:
+        boards = fetch_pinterest_boards(connected_profile)
+        error = ""
+    except (PinterestBoardFetchError, PinterestTokenError) as exc:
+        boards = []
+        error = str(exc)
+
+    return render(
+        request,
+        "profiles/partials/pinterest_board_options.html",
+        {
+            "connected_profile": connected_profile,
+            "boards": boards,
+            "error": error,
+        },
     )

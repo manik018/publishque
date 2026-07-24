@@ -4,6 +4,7 @@ import pytest
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.admin.sites import AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
@@ -46,9 +47,19 @@ def test_creating_post_with_targets_works(client, django_user_model):
     response = client.post(
         reverse("posts:new"),
         {
+            "title": "Optional title",
             "content": "A scheduled post",
             "connected_profiles": [profile_one.pk, profile_two.pk],
             "scheduled_time": scheduled_time.strftime("%Y-%m-%dT%H:%M"),
+            f"board_id_{profile_one.pk}": "board-1",
+            f"board_id_{profile_two.pk}": "board-2",
+            f"board_name_{profile_one.pk}": "Board One",
+            f"board_name_{profile_two.pk}": "Board Two",
+            "media": SimpleUploadedFile(
+                "pin.png",
+                b"fake-image-content",
+                content_type="image/png",
+            ),
         },
     )
 
@@ -56,11 +67,13 @@ def test_creating_post_with_targets_works(client, django_user_model):
     assert response.url == reverse("posts:list")
     post = Post.objects.get(owner=user)
     assert post.content == "A scheduled post"
+    assert post.title == "Optional title"
     assert post.targets.count() == 2
     assert set(post.targets.values_list("connected_profile_id", flat=True)) == {
         profile_one.pk,
         profile_two.pk,
     }
+    assert set(post.targets.values_list("board_id", flat=True)) == {"board-1", "board-2"}
 
 
 def test_post_list_requires_login(client):
@@ -103,6 +116,62 @@ def test_post_list_only_shows_owner_posts(client, django_user_model):
     assert response.status_code == 200
     assert "Owner-only post" in content
     assert "Hidden post" not in content
+
+
+def test_composer_rejects_pinterest_target_without_board(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="missing-board@example.com",
+        full_name="Missing Board User",
+        password="StrongPass123!",
+    )
+    profile = create_connected_profile(user, "missing-board-pin", "Missing Board Pins")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("posts:new"),
+        {
+            "content": "A scheduled post",
+            "connected_profiles": [profile.pk],
+            "scheduled_time": (
+                timezone.now() + timezone.timedelta(days=1)
+            ).strftime("%Y-%m-%dT%H:%M"),
+            "media": SimpleUploadedFile(
+                "pin.png",
+                b"fake-image-content",
+                content_type="image/png",
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Select a Pinterest board" in response.content.decode()
+    assert Post.objects.filter(owner=user).count() == 0
+
+
+def test_composer_rejects_pinterest_target_without_media(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="missing-media@example.com",
+        full_name="Missing Media User",
+        password="StrongPass123!",
+    )
+    profile = create_connected_profile(user, "missing-media-pin", "Missing Media Pins")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("posts:new"),
+        {
+            "content": "A scheduled post",
+            "connected_profiles": [profile.pk],
+            "scheduled_time": (
+                timezone.now() + timezone.timedelta(days=1)
+            ).strftime("%Y-%m-%dT%H:%M"),
+            f"board_id_{profile.pk}": "board-1",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Pinterest targets require an image upload." in response.content.decode()
+    assert Post.objects.filter(owner=user).count() == 0
 
 
 def test_check_scheduled_posts_publishes_due_targets(django_user_model):

@@ -18,8 +18,9 @@ class PostComposerForm(forms.ModelForm):
 
     class Meta:
         model = Post
-        fields = ("content", "media", "connected_profiles", "scheduled_time")
+        fields = ("title", "content", "media", "connected_profiles", "scheduled_time")
         widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Optional short title"}),
             "content": forms.Textarea(
                 attrs={
                     "rows": 6,
@@ -35,6 +36,11 @@ class PostComposerForm(forms.ModelForm):
             user=user,
             is_active=True,
         ).order_by("platform", "display_name")
+        self.fields["title"].widget.attrs.update(
+            {
+                "class": "block w-full rounded border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
+            }
+        )
         self.fields["content"].widget.attrs.update(
             {
                 "class": "block w-full rounded border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
@@ -63,3 +69,33 @@ class PostComposerForm(forms.ModelForm):
         if scheduled_time <= timezone.now():
             raise forms.ValidationError("Scheduled time must be in the future.")
         return scheduled_time
+
+    def clean(self):
+        cleaned_data = super().clean()
+        connected_profiles = cleaned_data.get("connected_profiles")
+        media = cleaned_data.get("media")
+
+        if not connected_profiles:
+            return cleaned_data
+
+        pinterest_profiles = [
+            profile
+            for profile in connected_profiles
+            if profile.platform == ConnectedProfile.Platform.PINTEREST
+        ]
+        if not pinterest_profiles:
+            return cleaned_data
+
+        if not media:
+            self.add_error("media", "Pinterest targets require an image upload.")
+        elif hasattr(media, "content_type") and not media.content_type.startswith("image/"):
+            self.add_error("media", "Pinterest media must be an image file.")
+
+        for profile in pinterest_profiles:
+            if not self.data.get(f"board_id_{profile.pk}", "").strip():
+                self.add_error(
+                    "connected_profiles",
+                    f"Select a Pinterest board for {profile.display_name}.",
+                )
+
+        return cleaned_data

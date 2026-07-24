@@ -1,0 +1,11 @@
+{% if error %}
+    <p class="text-sm text-red-700">{{ error }}</p>
+{% else %}
+    <label for="board-id-{{ connected_profile.pk }}" class="block text-sm font-medium text-slate-700">Pinterest board for {{ connected_profile.display_name }}</label>
+    <select id="board-id-{{ connected_profile.pk }}" name="board_id_{{ connected_profile.pk }}" class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm">
+        <option value="">Select a board</option>
+        {% for board in boards %}
+            <option value="{{ board.id }}" data-board-name="{{ board.name }}">{{ board.name }}</option>
+        {% endfor %}
+    </select>
+{% endif %}

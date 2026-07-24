@@ -1,16 +1,16 @@
-{% extends "base.html" %}
+{% extends "layout/dashboard_base.html" %}
 {% load socialaccount %}
 
 {% block title %}Connected Profiles | Publishque{% endblock %}
 
-{% block content %}
+{% block dashboard_content %}
 <section class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-semibold">Connected Profiles</h1>
             <p class="mt-1 text-sm text-slate-600">Manage the social accounts Publishque can publish to.</p>
         </div>
-        <a href="{% provider_login_url 'pinterest' process='connect' %}" class="inline-flex items-center justify-center rounded bg-red-700 px-4 py-2 text-sm font-medium text-white">
+        <a href="{% provider_login_url 'pinterest' process='connect' %}" class="inline-flex items-center justify-center rounded bg-accent px-4 py-2 text-sm font-medium text-white">
             Connect Pinterest Account
         </a>
     </div>
@@ -24,8 +24,8 @@
                             <p class="text-sm font-medium text-slate-500">{{ profile.get_platform_display }}</p>
                             <h2 class="mt-1 text-lg font-semibold">{{ profile.display_name }}</h2>
                         </div>
-                        <span class="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                            {{ profile.platform|title }}
+                        <span class="rounded bg-accent/10 px-2 py-1 text-xs font-medium text-accent">
+                            Pinterest
                         </span>
                     </div>
                     <dl class="mt-4 space-y-2 text-sm text-slate-600">

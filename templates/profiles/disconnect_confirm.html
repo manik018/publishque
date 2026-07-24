@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{% extends "layout/dashboard_base.html" %}
 
 {% block title %}Disconnect Profile | Publishque{% endblock %}
 
-{% block content %}
+{% block dashboard_content %}
 <section class="rounded bg-white p-6 shadow-sm ring-1 ring-slate-200">
     <h1 class="text-2xl font-semibold">Disconnect {{ connected_profile.get_platform_display }}</h1>
     <p class="mt-3 text-slate-600">

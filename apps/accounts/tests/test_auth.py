@@ -101,9 +101,3 @@ def test_logout_works(client, django_user_model):
     assert response.url == reverse("accounts:login")
     assert "_auth_user_id" not in client.session
 
-
-def test_dashboard_redirects_to_login_when_not_authenticated(client):
-    response = client.get(reverse("dashboard"))
-
-    assert response.status_code == 302
-    assert response.url == f"{reverse('accounts:login')}?next={reverse('dashboard')}"

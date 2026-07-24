@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+
+{% block title %}Connected Profiles | Publishque{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold">Connected Profiles</h1>
+            <p class="mt-1 text-sm text-slate-600">Manage the social accounts Publishque can publish to.</p>
+        </div>
+        <a href="{% provider_login_url 'pinterest' process='connect' %}" class="inline-flex items-center justify-center rounded bg-red-700 px-4 py-2 text-sm font-medium text-white">
+            Connect Pinterest Account
+        </a>
+    </div>
+
+    {% if connected_profiles %}
+        <div class="grid gap-4 sm:grid-cols-2">
+            {% for profile in connected_profiles %}
+                <article class="rounded bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">{{ profile.get_platform_display }}</p>
+                            <h2 class="mt-1 text-lg font-semibold">{{ profile.display_name }}</h2>
+                        </div>
+                        <span class="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                            {{ profile.platform|title }}
+                        </span>
+                    </div>
+                    <dl class="mt-4 space-y-2 text-sm text-slate-600">
+                        <div>
+                            <dt class="font-medium text-slate-900">Connected</dt>
+                            <dd>{{ profile.connected_at|date:"M j, Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-slate-900">Account ID</dt>
+                            <dd>{{ profile.platform_account_id }}</dd>
+                        </div>
+                    </dl>
+                    <a href="{% url 'profiles:disconnect_profile' profile.pk %}" class="mt-5 inline-flex rounded border border-red-200 px-3 py-2 text-sm font-medium text-red-700">
+                        Disconnect
+                    </a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded bg-white p-6 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
+            No social profiles are connected yet.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

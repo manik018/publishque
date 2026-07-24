@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Disconnect Profile | Publishque{% endblock %}
+
+{% block content %}
+<section class="rounded bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <h1 class="text-2xl font-semibold">Disconnect {{ connected_profile.get_platform_display }}</h1>
+    <p class="mt-3 text-slate-600">
+        This will remove {{ connected_profile.display_name }} from Publishque and delete the stored OAuth token.
+    </p>
+
+    <form method="post" class="mt-6 flex flex-wrap gap-3">
+        {% csrf_token %}
+        <button type="submit" class="rounded bg-red-700 px-4 py-2 text-sm font-medium text-white">
+            Disconnect
+        </button>
+        <a href="{% url 'profiles:connected_profiles' %}" class="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">
+            Cancel
+        </a>
+    </form>
+</section>
+{% endblock %}

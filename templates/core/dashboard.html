@@ -10,7 +10,7 @@
             <h1 class="mt-2 text-3xl font-bold text-primary">Welcome back, {{ request.user.full_name }}</h1>
             <p class="mt-2 max-w-2xl text-sm text-slate-600">Keep your social publishing workspace connected, organized, and ready for scheduling.</p>
         </div>
-        <a href="{% url 'profiles:connected_profiles' %}" class="inline-flex items-center justify-center rounded bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm">
+        <a href="{% url 'profiles:connected_profiles' %}" class="inline-flex items-center justify-center rounded bg-[#FF6B4A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#e85f42]">
             Connect a Profile
         </a>
     </section>
@@ -34,10 +34,10 @@
     <section class="rounded bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 class="text-lg font-semibold text-primary">Quick Actions</h2>
         <div class="mt-4 flex flex-wrap gap-3">
-            <a href="{% url 'profiles:connected_profiles' %}" class="rounded bg-primary px-4 py-2 text-sm font-semibold text-white">
+            <a href="{% url 'profiles:connected_profiles' %}" class="inline-flex rounded bg-[#2E2A5C] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#25224d]">
                 Connect a Profile
             </a>
-            <a href="{% url 'posts:new' %}" class="rounded bg-accent px-4 py-2 text-sm font-semibold text-white">
+            <a href="{% url 'posts:new' %}" class="inline-flex rounded bg-[#FF6B4A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#e85f42]">
                 Create a Post
             </a>
         </div>
@@ -48,7 +48,7 @@
             <div class="max-w-2xl">
                 <h2 class="text-xl font-semibold text-primary">Connect your first profile</h2>
                 <p class="mt-2 text-sm text-slate-600">Publishque needs at least one social account before it can help you plan and automate posts.</p>
-                <a href="{% url 'profiles:connected_profiles' %}" class="mt-4 inline-flex rounded bg-accent px-4 py-2 text-sm font-semibold text-white">
+                <a href="{% url 'profiles:connected_profiles' %}" class="mt-4 inline-flex rounded bg-[#2E2A5C] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#25224d]">
                     Connect Pinterest
                 </a>
             </div>

@@ -54,6 +54,30 @@ def test_dashboard_redirects_to_login_when_not_authenticated(client):
     assert response.url == f"{reverse('accounts:login')}?next={reverse('dashboard')}"
 
 
+def test_dashboard_quick_actions_and_empty_state_cta_render_visibly(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="quick@example.com",
+        full_name="Quick User",
+        password="StrongPass123!",
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Quick Actions" in content
+    assert f'href="{reverse("profiles:connected_profiles")}"' in content
+    assert f'href="{reverse("posts:new")}"' in content
+    assert "Connect a Profile" in content
+    assert "Create a Post" in content
+    assert "Connect Pinterest" in content
+    assert "bg-[#2E2A5C]" in content
+    assert "bg-[#FF6B4A]" in content
+
+
 def test_posts_page_loads_for_authenticated_user(client, django_user_model):
     user = django_user_model.objects.create_user(
         email="posts@example.com",

@@ -35,8 +35,7 @@ def test_connected_profiles_empty_state_connect_button_is_visible(
     assert response.status_code == 200
     assert "Connect your first profile" in content
     assert "Connect Pinterest" in content
-    assert "bg-[#2E2A5C]" in content
-    assert "text-white" in content
+    assert "btn-primary" in content
 
 
 def test_connected_profile_created_when_social_account_is_added(

@@ -48,7 +48,7 @@ class PostComposerForm(forms.ModelForm):
         )
         self.fields["media"].widget.attrs.update(
             {
-                "class": "block w-full text-sm text-slate-700 file:mr-4 file:rounded file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white",
+                "class": "file-input",
             }
         )
         self.fields["scheduled_time"].widget.attrs.update(

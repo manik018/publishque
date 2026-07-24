@@ -11,10 +11,10 @@
 
     <form method="post" class="mt-6 flex flex-wrap gap-3">
         {% csrf_token %}
-        <button type="submit" class="rounded bg-red-700 px-4 py-2 text-sm font-medium text-white">
+        <button type="submit" class="btn-primary">
             Disconnect
         </button>
-        <a href="{% url 'profiles:connected_profiles' %}" class="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">
+        <a href="{% url 'profiles:connected_profiles' %}" class="btn-outline">
             Cancel
         </a>
     </form>

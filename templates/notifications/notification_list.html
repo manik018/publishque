@@ -30,7 +30,7 @@
                 </div>
                 <h2 class="mt-6 text-xl font-semibold text-primary">No notifications yet</h2>
                 <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">When posts publish or need attention, you will see the update here.</p>
-                <a href="{% url 'posts:list' %}" class="mt-5 inline-flex rounded bg-[#FF6B4A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#e85f42]">Review posts</a>
+                <a href="{% url 'posts:list' %}" class="btn-accent mt-5">Review posts</a>
             </div>
         {% endfor %}
     </div>
@@ -38,13 +38,13 @@
     {% if page_obj.has_other_pages %}
         <nav class="flex items-center justify-between">
             {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium">Previous</a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="btn-outline">Previous</a>
             {% else %}
                 <span></span>
             {% endif %}
             <span class="text-sm text-slate-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium">Next</a>
+                <a href="?page={{ page_obj.next_page_number }}" class="btn-outline">Next</a>
             {% else %}
                 <span></span>
             {% endif %}

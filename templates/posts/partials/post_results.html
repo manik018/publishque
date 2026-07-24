@@ -58,7 +58,7 @@
         {% if page_obj.has_other_pages %}
             <nav class="flex items-center justify-between pt-2">
                 {% if page_obj.has_previous %}
-                    <a href="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page_obj.previous_page_number }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium"
+                    <a href="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-outline"
                        hx-get="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page_obj.previous_page_number }}"
                        hx-target="#post-results"
                        hx-push-url="true">Previous</a>
@@ -67,7 +67,7 @@
                 {% endif %}
                 <span class="text-sm text-slate-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
                 {% if page_obj.has_next %}
-                    <a href="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page_obj.next_page_number }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium"
+                    <a href="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-outline"
                        hx-get="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page_obj.next_page_number }}"
                        hx-target="#post-results"
                        hx-push-url="true">Next</a>
@@ -88,12 +88,12 @@
             <h2 class="mt-6 text-xl font-semibold text-primary">{% if has_active_filters %}No posts match these filters{% else %}No posts scheduled yet{% endif %}</h2>
             <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">{% if has_active_filters %}Try removing a filter or broadening the date range to see more posts.{% else %}Draft your first post, choose connected profiles, and Publishque will take care of the schedule.{% endif %}</p>
             {% if has_active_filters %}
-                <a href="{% url 'posts:list' %}" class="mt-5 inline-flex rounded bg-[#FF6B4A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#e85f42]"
+                <a href="{% url 'posts:list' %}" class="btn-accent mt-5"
                    hx-get="{% url 'posts:list' %}"
                    hx-target="#post-results"
                    hx-push-url="true">Reset filters</a>
             {% else %}
-                <a href="{% url 'posts:new' %}" class="mt-5 inline-flex rounded bg-[#FF6B4A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#e85f42]">Create a Post</a>
+                <a href="{% url 'posts:new' %}" class="btn-accent mt-5">Create a Post</a>
             {% endif %}
         </div>
     {% endif %}

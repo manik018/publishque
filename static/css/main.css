@@ -1,3 +1,133 @@
+.btn-primary,
+.btn-accent,
+.btn-outline,
+.btn-disabled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.btn-primary {
+    background-color: #2e2a5c;
+    color: #ffffff;
+    border: 1px solid #2e2a5c;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #25224d;
+    border-color: #25224d;
+    color: #ffffff;
+}
+
+.btn-accent {
+    background-color: #ff6b4a;
+    color: #ffffff;
+    border: 1px solid #ff6b4a;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.btn-accent:hover,
+.btn-accent:focus {
+    background-color: #e85f42;
+    border-color: #e85f42;
+    color: #ffffff;
+}
+
+.btn-outline {
+    background-color: #ffffff;
+    color: #2e2a5c;
+    border: 1px solid #2e2a5c;
+}
+
+.btn-outline:hover,
+.btn-outline:focus {
+    background-color: #f1f0fb;
+    color: #2e2a5c;
+}
+
+.btn-disabled,
+.btn-disabled:hover,
+.btn-disabled:focus,
+button:disabled.btn-primary,
+button:disabled.btn-accent,
+button:disabled.btn-outline {
+    background-color: #e2e8f0;
+    border-color: #e2e8f0;
+    color: #64748b;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.file-input {
+    display: block;
+    width: 100%;
+    color: #334155;
+    font-size: 0.875rem;
+}
+
+.file-input::file-selector-button {
+    margin-right: 1rem;
+    border: 1px solid #2e2a5c;
+    border-radius: 0.25rem;
+    background-color: #ffffff;
+    color: #2e2a5c;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.file-input::-webkit-file-upload-button {
+    margin-right: 1rem;
+    border: 1px solid #2e2a5c;
+    border-radius: 0.25rem;
+    background-color: #ffffff;
+    color: #2e2a5c;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.file-input:hover::file-selector-button,
+.file-input:focus::file-selector-button,
+.file-input:hover::-webkit-file-upload-button,
+.file-input:focus::-webkit-file-upload-button {
+    background-color: #f1f0fb;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-left: 4px solid transparent;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    color: #334155;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+}
+
+.sidebar-link:hover {
+    background-color: #f8fafc;
+    color: #2e2a5c;
+}
+
+.sidebar-link-active {
+    border-left-color: #ff6b4a;
+    background-color: #f1f0fb;
+    color: #2e2a5c;
+    font-weight: 700;
+}
+
 .htmx-indicator {
     display: none;
 }

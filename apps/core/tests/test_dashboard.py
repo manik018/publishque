@@ -74,8 +74,9 @@ def test_dashboard_quick_actions_and_empty_state_cta_render_visibly(
     assert "Connect a Profile" in content
     assert "Create a Post" in content
     assert "Connect Pinterest" in content
-    assert "bg-[#2E2A5C]" in content
-    assert "bg-[#FF6B4A]" in content
+    assert "btn-primary" in content
+    assert "btn-accent" in content
+    assert "sidebar-link-active" in content
 
 
 def test_posts_page_loads_for_authenticated_user(client, django_user_model):

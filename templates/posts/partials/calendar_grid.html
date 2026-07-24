@@ -4,13 +4,13 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-xl font-semibold text-primary">{{ month_name }} {{ year }}</h2>
         <div class="flex flex-wrap gap-2">
-            <a href="?year={{ previous_year }}&month={{ previous_month }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+            <a href="?year={{ previous_year }}&month={{ previous_month }}" class="btn-outline"
                hx-get="?year={{ previous_year }}&month={{ previous_month }}"
                hx-target="#calendar-grid"
                hx-push-url="true">
                 &larr; Previous month
             </a>
-            <a href="?year={{ next_year }}&month={{ next_month }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+            <a href="?year={{ next_year }}&month={{ next_month }}" class="btn-outline"
                hx-get="?year={{ next_year }}&month={{ next_month }}"
                hx-target="#calendar-grid"
                hx-push-url="true">

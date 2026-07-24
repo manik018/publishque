@@ -18,7 +18,7 @@
                 </div>
             {% endfor %}
         </div>
-        <button type="submit" class="mt-5 rounded bg-[#FF6B4A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#e85f42]">Update password</button>
+        <button type="submit" class="btn-accent mt-5">Update password</button>
     </form>
 
     <section class="rounded bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -27,7 +27,7 @@
                 <h2 class="text-lg font-semibold text-primary">Connected social profiles</h2>
                 <p class="mt-1 text-sm text-slate-600">Read-only summary. Manage connections from the profiles page.</p>
             </div>
-            <a href="{% url 'profiles:connected_profiles' %}" class="text-sm font-semibold text-accent">Manage profiles</a>
+            <a href="{% url 'profiles:connected_profiles' %}" class="btn-outline">Manage profiles</a>
         </div>
         <div class="mt-4 space-y-2">
             {% for profile in connected_profiles %}
@@ -52,7 +52,7 @@
             <input type="hidden" name="action" value="delete_account">
             <label for="confirm-delete" class="block text-sm font-medium text-slate-900">Type DELETE to confirm</label>
             <input id="confirm-delete" name="confirm_delete" class="block w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm" autocomplete="off" data-delete-confirm>
-            <button type="submit" class="rounded bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300" disabled data-delete-submit>
+            <button type="submit" class="btn-primary" disabled data-delete-submit>
                 Delete my account
             </button>
         </form>

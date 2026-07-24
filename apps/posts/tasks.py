@@ -1,8 +1,58 @@
+import logging
+
 from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
 from django.utils import timezone
+
+from apps.notifications.models import Notification
 
 from .adapters import get_adapter_for_platform
 from .models import PostTarget
+
+
+logger = logging.getLogger("publishque.posts.tasks")
+
+
+def summarize_error(exc):
+    message = str(exc).strip() or exc.__class__.__name__
+    return message[:500]
+
+
+def create_success_notification(post_target):
+    platform = post_target.connected_profile.get_platform_display()
+    Notification.objects.create(
+        user=post_target.post.owner,
+        title="Post published",
+        message=f"Your post to {platform} was published successfully.",
+        level=Notification.Level.SUCCESS,
+        related_post_target=post_target,
+    )
+
+
+def create_failure_notification(post_target, error_summary):
+    platform = post_target.connected_profile.get_platform_display()
+    attempts = settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS
+    Notification.objects.create(
+        user=post_target.post.owner,
+        title="Post failed to publish",
+        message=(
+            f"Your post to {platform} failed to publish after {attempts} "
+            f"attempts: {error_summary}"
+        ),
+        level=Notification.Level.ERROR,
+        related_post_target=post_target,
+    )
+    send_mail(
+        subject=f"Publishque could not publish your post to {platform}",
+        message=(
+            f"Your post to {platform} failed to publish after {attempts} "
+            f"attempts.\n\nError: {error_summary}\n\nReview your posts at /posts/."
+        ),
+        from_email=None,
+        recipient_list=[post_target.post.owner.email],
+        fail_silently=True,
+    )
 
 
 @shared_task
@@ -23,6 +73,7 @@ def check_scheduled_posts():
 
         try:
             adapter = get_adapter_for_platform(post_target.connected_profile.platform)
+            logger.info("Publishing post target %s", post_target.pk)
             published = adapter.publish(post_target)
             if not published:
                 raise RuntimeError("Adapter returned False while publishing.")
@@ -31,13 +82,46 @@ def check_scheduled_posts():
             post_target.sent_at = timezone.now()
             post_target.error_message = ""
             post_target.save(update_fields=["status", "sent_at", "error_message"])
+            create_success_notification(post_target)
+            logger.info("Published post target %s", post_target.pk)
         except Exception as exc:  # noqa: BLE001
-            post_target.status = PostTarget.Status.FAILED
+            logger.exception("Publishing post target %s failed", post_target.pk)
+            error_summary = summarize_error(exc)
             post_target.retry_count += 1
-            post_target.error_message = str(exc)
-            post_target.save(
-                update_fields=["status", "retry_count", "error_message"]
-            )
+            post_target.error_message = error_summary
+
+            if post_target.retry_count < settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS:
+                delay_minutes = 2**post_target.retry_count
+                post_target.status = PostTarget.Status.PENDING
+                post_target.scheduled_time = timezone.now() + timezone.timedelta(
+                    minutes=delay_minutes
+                )
+                post_target.save(
+                    update_fields=[
+                        "status",
+                        "retry_count",
+                        "error_message",
+                        "scheduled_time",
+                    ]
+                )
+                logger.warning(
+                    "Rescheduled post target %s after failure; retry %s/%s in %s minutes",
+                    post_target.pk,
+                    post_target.retry_count,
+                    settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS,
+                    delay_minutes,
+                )
+            else:
+                post_target.status = PostTarget.Status.FAILED
+                post_target.save(
+                    update_fields=["status", "retry_count", "error_message"]
+                )
+                create_failure_notification(post_target, error_summary)
+                logger.error(
+                    "Post target %s permanently failed after %s attempts",
+                    post_target.pk,
+                    post_target.retry_count,
+                )
 
         processed += 1
 

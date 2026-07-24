@@ -28,21 +28,41 @@
                     </a>
                 </div>
 
-                <details class="relative">
-                    <summary class="flex cursor-pointer list-none items-center gap-3 rounded px-2 py-1.5 hover:bg-slate-100">
-                        <span class="hidden text-sm font-medium text-slate-700 sm:inline">{{ request.user.full_name }}</span>
-                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-                            {{ request.user.get_short_name|first|upper }}
-                        </span>
-                    </summary>
-                    <div class="absolute right-0 mt-2 w-56 rounded bg-white p-2 shadow-lg ring-1 ring-slate-200">
-                        <a href="{% url 'settings' %}" class="block rounded px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Profile settings</a>
-                        <form method="post" action="{% url 'accounts:logout' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="block w-full rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100">Logout</button>
-                        </form>
-                    </div>
-                </details>
+                <div class="flex items-center gap-3">
+                    <details class="relative">
+                        <summary class="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded border border-slate-200 text-slate-600 hover:bg-slate-100"
+                                 hx-get="{% url 'notifications:dropdown' %}"
+                                 hx-target="#notification-dropdown"
+                                 hx-swap="innerHTML">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.7V4a2 2 0 1 0-4 0v1.3A6 6 0 0 0 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17a3 3 0 0 0 6 0" />
+                            </svg>
+                            {% if unread_notification_count %}
+                                <span class="absolute -right-1 -top-1 min-w-5 rounded-full bg-accent px-1.5 py-0.5 text-center text-xs font-bold text-white">{{ unread_notification_count }}</span>
+                            {% endif %}
+                        </summary>
+                        <div id="notification-dropdown" class="absolute right-0 mt-2 w-80 rounded bg-white shadow-lg ring-1 ring-slate-200">
+                            {% include "notifications/partials/dropdown.html" with notifications=recent_notifications %}
+                        </div>
+                    </details>
+
+                    <details class="relative">
+                        <summary class="flex cursor-pointer list-none items-center gap-3 rounded px-2 py-1.5 hover:bg-slate-100">
+                            <span class="hidden text-sm font-medium text-slate-700 sm:inline">{{ request.user.full_name }}</span>
+                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                                {{ request.user.get_short_name|first|upper }}
+                            </span>
+                        </summary>
+                        <div class="absolute right-0 mt-2 w-56 rounded bg-white p-2 shadow-lg ring-1 ring-slate-200">
+                            <a href="{% url 'settings' %}" class="block rounded px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Profile settings</a>
+                            <form method="post" action="{% url 'accounts:logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="block w-full rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100">Logout</button>
+                            </form>
+                        </div>
+                    </details>
+                </div>
             </div>
         </header>
 

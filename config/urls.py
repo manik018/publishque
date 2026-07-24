@@ -12,6 +12,7 @@ urlpatterns = [
     path("accounts/", include("apps.accounts.urls")),
     path("social/", include("allauth.urls")),
     path("profiles/", include("apps.profiles.urls")),
+    path("notifications/", include("apps.notifications.urls")),
     path("posts/", include("apps.posts.urls")),
     path("settings/", settings_coming_soon, name="settings"),
     path("dashboard/", dashboard, name="dashboard"),

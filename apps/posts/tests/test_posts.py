@@ -2,9 +2,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 from allauth.socialaccount.models import SocialAccount
+from django.contrib.admin.sites import AdminSite
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.notifications.models import Notification
+from apps.posts.admin import PostTargetAdmin
 from apps.posts.models import Post, PostTarget
 from apps.posts.tasks import check_scheduled_posts
 from apps.profiles.models import ConnectedProfile
@@ -126,9 +130,15 @@ def test_check_scheduled_posts_publishes_due_targets(django_user_model):
     assert post_target.status == PostTarget.Status.SENT
     assert post_target.sent_at is not None
     assert post_target.retry_count == 0
+    notification = Notification.objects.get(related_post_target=post_target)
+    assert notification.level == Notification.Level.SUCCESS
+    assert "published successfully" in notification.message
 
 
-def test_check_scheduled_posts_marks_failed_on_adapter_error(django_user_model):
+def test_check_scheduled_posts_retries_and_reschedules_on_adapter_error(
+    django_user_model, settings
+):
+    settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS = 3
     user = django_user_model.objects.create_user(
         email="fail@example.com",
         full_name="Fail User",
@@ -141,6 +151,41 @@ def test_check_scheduled_posts_marks_failed_on_adapter_error(django_user_model):
         connected_profile=profile,
         scheduled_time=timezone.now() - timezone.timedelta(minutes=1),
     )
+    original_scheduled_time = post_target.scheduled_time
+    adapter = Mock()
+    adapter.publish.side_effect = RuntimeError("Pinterest unavailable")
+
+    with patch("apps.posts.tasks.get_adapter_for_platform", return_value=adapter):
+        processed = check_scheduled_posts()
+
+    post_target.refresh_from_db()
+    assert processed == 1
+    assert post_target.status == PostTarget.Status.PENDING
+    assert post_target.sent_at is None
+    assert post_target.retry_count == 1
+    assert post_target.error_message == "Pinterest unavailable"
+    assert post_target.scheduled_time > original_scheduled_time
+    assert post_target.scheduled_time > timezone.now()
+    assert Notification.objects.count() == 0
+
+
+def test_check_scheduled_posts_permanent_failure_creates_notification_and_email(
+    django_user_model, settings, mailoutbox
+):
+    settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS = 3
+    user = django_user_model.objects.create_user(
+        email="final-fail@example.com",
+        full_name="Final Fail User",
+        password="StrongPass123!",
+    )
+    profile = create_connected_profile(user, "final-fail-pin", "Final Fail Pins")
+    post = Post.objects.create(owner=user, content="Final failing post")
+    post_target = PostTarget.objects.create(
+        post=post,
+        connected_profile=profile,
+        scheduled_time=timezone.now() - timezone.timedelta(minutes=1),
+        retry_count=2,
+    )
     adapter = Mock()
     adapter.publish.side_effect = RuntimeError("Pinterest unavailable")
 
@@ -150,6 +195,43 @@ def test_check_scheduled_posts_marks_failed_on_adapter_error(django_user_model):
     post_target.refresh_from_db()
     assert processed == 1
     assert post_target.status == PostTarget.Status.FAILED
-    assert post_target.sent_at is None
-    assert post_target.retry_count == 1
+    assert post_target.retry_count == 3
     assert post_target.error_message == "Pinterest unavailable"
+
+    notification = Notification.objects.get(related_post_target=post_target)
+    assert notification.level == Notification.Level.ERROR
+    assert "failed to publish after 3 attempts" in notification.message
+    assert len(mailoutbox) == 1
+    assert "could not publish" in mailoutbox[0].subject
+
+
+def test_admin_retry_action_resets_failed_posts(rf, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="admin-retry@example.com",
+        full_name="Admin Retry User",
+        password="StrongPass123!",
+    )
+    profile = create_connected_profile(user, "admin-retry-pin", "Admin Retry Pins")
+    post = Post.objects.create(owner=user, content="Retry from admin")
+    failed_target = PostTarget.objects.create(
+        post=post,
+        connected_profile=profile,
+        scheduled_time=timezone.now() - timezone.timedelta(days=1),
+        status=PostTarget.Status.FAILED,
+        retry_count=3,
+        error_message="Permanent failure",
+    )
+    request = rf.post("/")
+    request.user = user
+    setattr(request, "session", {})
+    messages = FallbackStorage(request)
+    setattr(request, "_messages", messages)
+    admin = PostTargetAdmin(PostTarget, AdminSite())
+
+    admin.retry_selected_failed_posts(request, PostTarget.objects.filter(pk=failed_target.pk))
+
+    failed_target.refresh_from_db()
+    assert failed_target.status == PostTarget.Status.PENDING
+    assert failed_target.retry_count == 0
+    assert failed_target.error_message == ""
+    assert failed_target.scheduled_time <= timezone.now()

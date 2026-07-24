@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils import timezone
 
 from .models import Post, PostTarget
 
@@ -37,3 +38,15 @@ class PostTargetAdmin(admin.ModelAdmin):
         "post__owner__email",
         "connected_profile__display_name",
     )
+    actions = ["retry_selected_failed_posts"]
+
+    @admin.action(description="Retry selected failed posts")
+    def retry_selected_failed_posts(self, request, queryset):
+        failed_targets = queryset.filter(status=PostTarget.Status.FAILED)
+        updated = failed_targets.update(
+            status=PostTarget.Status.PENDING,
+            retry_count=0,
+            scheduled_time=timezone.now(),
+            error_message="",
+        )
+        self.message_user(request, f"{updated} failed post target(s) queued for retry.")

@@ -3,7 +3,7 @@ import logging
 from .base import BasePlatformAdapter
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("publishque.posts.adapters.pinterest")
 
 
 class PinterestAdapter(BasePlatformAdapter):

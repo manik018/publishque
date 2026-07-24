@@ -19,6 +19,26 @@ def test_connected_profiles_page_requires_login(client):
     assert response.url == expected_url
 
 
+def test_connected_profiles_empty_state_connect_button_is_visible(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="empty-profiles@example.com",
+        full_name="Empty Profiles User",
+        password="StrongPass123!",
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("profiles:connected_profiles"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Connect your first profile" in content
+    assert "Connect Pinterest" in content
+    assert "bg-[#2E2A5C]" in content
+    assert "text-white" in content
+
+
 def test_connected_profile_created_when_social_account_is_added(
     rf, django_user_model
 ):

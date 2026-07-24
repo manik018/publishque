@@ -1,4 +1,5 @@
 {% extends "layout/dashboard_base.html" %}
+{% load platform_icons %}
 
 {% block title %}Posts & Scheduler | Publishque{% endblock %}
 
@@ -29,7 +30,8 @@
                     </div>
                     <div class="mt-5 flex flex-wrap gap-2">
                         {% for target in post.targets.all %}
-                            <span class="rounded px-2.5 py-1 text-xs font-semibold {% if target.status == 'pending' %}bg-slate-100 text-slate-700{% elif target.status == 'processing' %}bg-blue-100 text-blue-700{% elif target.status == 'sent' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                            <span class="inline-flex items-center gap-2 rounded px-2.5 py-1 text-xs font-semibold {% if target.status == 'pending' %}bg-slate-100 text-slate-700{% elif target.status == 'processing' %}bg-blue-100 text-blue-700{% elif target.status == 'sent' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {% platform_icon target.connected_profile.platform %}
                                 {{ target.connected_profile.display_name }}: {{ target.get_status_display }}
                             </span>
                         {% endfor %}
@@ -39,8 +41,15 @@
         </div>
     {% else %}
         <div class="rounded border border-dashed border-slate-300 bg-white p-8 text-center">
-            <h2 class="text-xl font-semibold text-primary">No posts scheduled yet</h2>
-            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Create your first post and choose which connected profiles should receive it.</p>
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg class="h-10 w-10" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 3v4M17 3v4M4 9h16" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 14h5M8 17h8" />
+                </svg>
+            </div>
+            <h2 class="mt-6 text-xl font-semibold text-primary">No posts scheduled yet</h2>
+            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Draft your first post, choose connected profiles, and Publishque will take care of the schedule.</p>
             <a href="{% url 'posts:new' %}" class="mt-5 inline-flex rounded bg-accent px-4 py-2 text-sm font-semibold text-white">Create a Post</a>
         </div>
     {% endif %}

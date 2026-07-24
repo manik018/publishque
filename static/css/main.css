@@ -1,1 +1,23 @@
+.htmx-indicator {
+    display: none;
+}
 
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: inline-flex;
+}
+
+.spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #cbd5e1;
+    border-top-color: #ff6b4a;
+    border-radius: 9999px;
+    animation: publishque-spin 0.8s linear infinite;
+}
+
+@keyframes publishque-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

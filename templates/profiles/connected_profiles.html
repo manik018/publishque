@@ -1,5 +1,6 @@
 {% extends "layout/dashboard_base.html" %}
 {% load socialaccount %}
+{% load platform_icons %}
 
 {% block title %}Connected Profiles | Publishque{% endblock %}
 
@@ -20,9 +21,12 @@
             {% for profile in connected_profiles %}
                 <article class="rounded bg-white p-5 shadow-sm ring-1 ring-slate-200">
                     <div class="flex items-start justify-between gap-4">
-                        <div>
+                        <div class="flex items-start gap-3">
+                            {% platform_icon profile.platform %}
+                            <div>
                             <p class="text-sm font-medium text-slate-500">{{ profile.get_platform_display }}</p>
                             <h2 class="mt-1 text-lg font-semibold">{{ profile.display_name }}</h2>
+                            </div>
                         </div>
                         <span class="rounded bg-accent/10 px-2 py-1 text-xs font-medium text-accent">
                             Pinterest
@@ -45,8 +49,18 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="rounded bg-white p-6 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-            No social profiles are connected yet.
+        <div class="rounded border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <svg class="h-10 w-10" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 0-7.1-.1l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1" />
+                </svg>
+            </div>
+            <h2 class="mt-6 text-xl font-semibold text-primary">Connect your first profile</h2>
+            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Start with Pinterest so Publishque can prepare scheduled posts for the right audience.</p>
+            <a href="{% provider_login_url 'pinterest' process='connect' %}" class="mt-5 inline-flex rounded bg-accent px-4 py-2 text-sm font-semibold text-white">
+                Connect Pinterest
+            </a>
         </div>
     {% endif %}
 </section>

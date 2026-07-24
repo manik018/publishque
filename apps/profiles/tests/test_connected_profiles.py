@@ -88,6 +88,8 @@ def test_disconnect_removes_connected_profile_social_account_and_token(
 
     assert response.status_code == 302
     assert response.url == reverse("profiles:connected_profiles")
+    queued_messages = [message.message for message in response.wsgi_request._messages]
+    assert "Disconnect Pins was disconnected from Pinterest." in queued_messages
     assert not ConnectedProfile.objects.filter(pk=connected_profile.pk).exists()
     assert not SocialAccount.objects.filter(pk=social_account.pk).exists()
     assert not SocialToken.objects.filter(account=social_account).exists()

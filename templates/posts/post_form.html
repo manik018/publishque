@@ -1,4 +1,5 @@
 {% extends "layout/dashboard_base.html" %}
+{% load platform_icons %}
 
 {% block title %}New Post | Publishque{% endblock %}
 
@@ -55,10 +56,16 @@
                                                hx-get="{% url 'profiles:pinterest_board_options' profile.pk %}"
                                                hx-target="#board-selector-{{ profile.pk }}"
                                                hx-swap="innerHTML"
+                                               hx-indicator="#board-loading-{{ profile.pk }}"
                                                {% endif %}>
+                                        {% platform_icon profile.platform %}
                                         <span>{{ profile.display_name }}</span>
                                     </label>
                                     {% if profile.platform == "pinterest" %}
+                                        <span id="board-loading-{{ profile.pk }}" class="htmx-indicator ml-6 items-center gap-2 text-sm text-slate-500">
+                                            <span class="spinner"></span>
+                                            Loading boards...
+                                        </span>
                                         <div id="board-selector-{{ profile.pk }}" class="ml-6 mt-2"></div>
                                         <input type="hidden" name="board_name_{{ profile.pk }}" id="board-name-{{ profile.pk }}">
                                     {% endif %}

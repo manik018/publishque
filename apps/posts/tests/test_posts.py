@@ -65,6 +65,8 @@ def test_creating_post_with_targets_works(client, django_user_model):
 
     assert response.status_code == 302
     assert response.url == reverse("posts:list")
+    queued_messages = [message.message for message in response.wsgi_request._messages]
+    assert "Post scheduled successfully." in queued_messages
     post = Post.objects.get(owner=user)
     assert post.content == "A scheduled post"
     assert post.title == "Optional title"

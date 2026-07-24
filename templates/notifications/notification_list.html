@@ -22,8 +22,15 @@
             </article>
         {% empty %}
             <div class="rounded bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
-                <h2 class="text-xl font-semibold text-primary">No notifications yet</h2>
-                <p class="mt-2 text-sm text-slate-600">Publishing updates will appear here.</p>
+                <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <svg class="h-10 w-10" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.7V4a2 2 0 1 0-4 0v1.3A6 6 0 0 0 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17a3 3 0 0 0 6 0" />
+                    </svg>
+                </div>
+                <h2 class="mt-6 text-xl font-semibold text-primary">No notifications yet</h2>
+                <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">When posts publish or need attention, you will see the update here.</p>
+                <a href="{% url 'posts:list' %}" class="mt-5 inline-flex rounded bg-accent px-4 py-2 text-sm font-semibold text-white">Review posts</a>
             </div>
         {% endfor %}
     </div>

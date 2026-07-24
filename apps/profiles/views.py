@@ -1,4 +1,5 @@
 from allauth.socialaccount.models import SocialAccount
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -29,8 +30,11 @@ def disconnect_profile(request, pk):
     )
 
     if request.method == "POST":
+        platform = connected_profile.get_platform_display()
+        display_name = connected_profile.display_name
         social_account = connected_profile.social_account
         SocialAccount.objects.filter(pk=social_account.pk).delete()
+        messages.success(request, f"{display_name} was disconnected from {platform}.")
         return redirect("profiles:connected_profiles")
 
     return render(

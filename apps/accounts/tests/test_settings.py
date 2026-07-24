@@ -138,3 +138,41 @@ def test_notification_preferences_save_correctly(client, django_user_model):
     assert preferences.email_on_post_failure is False
     assert preferences.in_app_on_post_success is False
     assert preferences.in_app_on_post_failure is True
+
+
+def test_settings_subnav_shows_all_tabs_and_highlights_current_page(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="subnav@example.com",
+        full_name="Subnav User",
+        password="StrongPass123!",
+    )
+    client.force_login(user)
+
+    pages = (
+        ("settings_profile", "Profile"),
+        ("settings_security", "Security"),
+        ("settings_notifications", "Notifications"),
+    )
+
+    for url_name, label in pages:
+        response = client.get(reverse(url_name))
+        content = response.content.decode()
+
+        assert response.status_code == 200
+        assert 'href="/settings/profile/"' in content
+        assert 'href="/settings/security/"' in content
+        assert 'href="/settings/notifications/"' in content
+        assert ">Profile</a>" in content
+        assert ">Security</a>" in content
+        assert ">Notifications</a>" in content
+        assert (
+            f'href="{reverse(url_name)}" '
+            'class="sidebar-link sidebar-link-active"'
+        ) in content
+        subnav_start = content.index('<aside class="rounded bg-white p-3')
+        subnav_end = content.index("</aside>", subnav_start)
+        subnav_html = content[subnav_start:subnav_end]
+        assert subnav_html.count("sidebar-link-active") == 1
+        assert f">{label}</a>" in content

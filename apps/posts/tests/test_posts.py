@@ -384,6 +384,108 @@ def test_filter_state_persists_in_url_query_string(client, django_user_model):
     assert "platform=pinterest" in content
 
 
+def test_calendar_view_requires_login(client):
+    response = client.get(reverse("posts:calendar"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('accounts:login')}?next={reverse('posts:calendar')}"
+
+
+def test_calendar_groups_post_targets_by_requested_month(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="calendar@example.com",
+        full_name="Calendar User",
+        password="StrongPass123!",
+    )
+    profile = create_connected_profile(user, "calendar-pin", "Calendar Pins")
+    create_post_with_target(
+        user,
+        profile,
+        "August scheduled",
+        "Calendar content",
+        scheduled_time=timezone.datetime(2026, 8, 10, 9, tzinfo=dt_timezone.utc),
+    )
+    create_post_with_target(
+        user,
+        profile,
+        "September scheduled",
+        "Outside month",
+        scheduled_time=timezone.datetime(2026, 9, 10, 9, tzinfo=dt_timezone.utc),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("posts:calendar"), {"year": 2026, "month": 8})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "August 2026" in content
+    assert "August scheduled" in content
+    assert "September scheduled" not in content
+
+
+def test_calendar_month_navigation_handles_year_rollover(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="rollover@example.com",
+        full_name="Rollover User",
+        password="StrongPass123!",
+    )
+    client.force_login(user)
+
+    december = client.get(reverse("posts:calendar"), {"year": 2026, "month": 12})
+    january = client.get(reverse("posts:calendar"), {"year": 2027, "month": 1})
+
+    december_content = december.content.decode()
+    january_content = january.content.decode()
+    assert "?year=2027&month=1" in december_content
+    assert "?year=2026&month=12" in january_content
+
+
+def test_calendar_day_detail_only_shows_requesting_users_posts(
+    client, django_user_model
+):
+    owner = django_user_model.objects.create_user(
+        email="day-owner@example.com",
+        full_name="Day Owner",
+        password="StrongPass123!",
+    )
+    other_user = django_user_model.objects.create_user(
+        email="day-other@example.com",
+        full_name="Day Other",
+        password="StrongPass123!",
+    )
+    owner_profile = create_connected_profile(owner, "day-owner-pin", "Day Owner Pins")
+    other_profile = create_connected_profile(other_user, "day-other-pin", "Day Other Pins")
+    scheduled_time = timezone.datetime(2026, 8, 12, 15, tzinfo=dt_timezone.utc)
+    create_post_with_target(owner, owner_profile, "Owner day post", "Visible", scheduled_time=scheduled_time)
+    create_post_with_target(other_user, other_profile, "Other day post", "Hidden", scheduled_time=scheduled_time)
+    client.force_login(owner)
+
+    response = client.get(
+        reverse("posts:calendar_day_detail"), {"date": "2026-08-12"}
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Owner day post" in content
+    assert "Other day post" not in content
+
+
+def test_calendar_day_detail_empty_day_returns_empty_message(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="empty-day@example.com",
+        full_name="Empty Day User",
+        password="StrongPass123!",
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("posts:calendar_day_detail"), {"date": "2026-08-13"}
+    )
+
+    assert response.status_code == 200
+    assert "No posts scheduled" in response.content.decode()
+
+
 def test_composer_rejects_pinterest_target_without_board(client, django_user_model):
     user = django_user_model.objects.create_user(
         email="missing-board@example.com",

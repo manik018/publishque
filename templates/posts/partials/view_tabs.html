@@ -1,0 +1,8 @@
+<div class="inline-flex rounded bg-white p-1 shadow-sm ring-1 ring-slate-200">
+    <a href="{% url 'posts:list' %}" class="rounded px-3 py-1.5 text-sm font-semibold {% if active_view == 'list' %}bg-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+        List View
+    </a>
+    <a href="{% url 'posts:calendar' %}" class="rounded px-3 py-1.5 text-sm font-semibold {% if active_view == 'calendar' %}bg-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+        Calendar View
+    </a>
+</div>

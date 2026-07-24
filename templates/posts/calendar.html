@@ -1,0 +1,25 @@
+{% extends "layout/dashboard_base.html" %}
+
+{% block title %}Calendar | Publishque{% endblock %}
+
+{% block dashboard_content %}
+<section class="space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-primary">Posts & Scheduler</h1>
+            <p class="mt-1 text-sm text-slate-600">See scheduled posts by month and drill into busy days.</p>
+        </div>
+        <a href="{% url 'posts:new' %}" class="inline-flex items-center justify-center rounded bg-accent px-4 py-2 text-sm font-semibold text-white">
+            New Post
+        </a>
+    </div>
+
+    {% include "posts/partials/view_tabs.html" with active_view="calendar" %}
+
+    <div id="calendar-grid">
+        {% include "posts/partials/calendar_grid.html" %}
+    </div>
+
+    <div id="calendar-day-modal"></div>
+</section>
+{% endblock %}

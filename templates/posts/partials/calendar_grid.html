@@ -1,0 +1,55 @@
+{% load platform_icons %}
+
+<div class="rounded bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 class="text-xl font-semibold text-primary">{{ month_name }} {{ year }}</h2>
+        <div class="flex flex-wrap gap-2">
+            <a href="?year={{ previous_year }}&month={{ previous_month }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+               hx-get="?year={{ previous_year }}&month={{ previous_month }}"
+               hx-target="#calendar-grid"
+               hx-push-url="true">
+                &larr; Previous month
+            </a>
+            <a href="?year={{ next_year }}&month={{ next_month }}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+               hx-get="?year={{ next_year }}&month={{ next_month }}"
+               hx-target="#calendar-grid"
+               hx-push-url="true">
+                Next month &rarr;
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-4 overflow-x-auto">
+        <div class="min-w-[760px]">
+            <div class="grid grid-cols-7 border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {% for weekday in weekday_names %}
+                    <div class="px-3 py-2">{{ weekday }}</div>
+                {% endfor %}
+            </div>
+            <div class="grid grid-cols-7">
+                {% for week in calendar_weeks %}
+                    {% for day in week %}
+                        <button type="button"
+                                class="min-h-32 border-b border-r border-slate-200 p-2 text-left transition hover:bg-slate-50 {% if not day.in_month %}bg-slate-50 text-slate-400{% else %}bg-white{% endif %} {% if day.is_today %}ring-2 ring-inset ring-accent{% endif %}"
+                                hx-get="{% url 'posts:calendar_day_detail' %}?date={{ day.date|date:'Y-m-d' }}"
+                                hx-target="#calendar-day-modal"
+                                hx-swap="innerHTML">
+                            <span class="text-sm font-semibold {% if day.is_today %}text-accent{% else %}text-slate-700{% endif %}">{{ day.day }}</span>
+                            <span class="mt-2 block space-y-1">
+                                {% for target in day.targets %}
+                                    <span class="flex items-center gap-1 truncate rounded px-1.5 py-1 text-xs {% if target.status == 'pending' %}bg-slate-100 text-slate-700{% elif target.status == 'processing' %}bg-blue-100 text-blue-700{% elif target.status == 'sent' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                        {% platform_icon target.connected_profile.platform %}
+                                        <span class="truncate">{{ target.post.title|default:target.post.content|truncatechars:22 }}</span>
+                                    </span>
+                                {% endfor %}
+                                {% if day.more_count %}
+                                    <span class="block text-xs font-semibold text-primary">+{{ day.more_count }} more</span>
+                                {% endif %}
+                            </span>
+                        </button>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>

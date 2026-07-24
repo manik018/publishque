@@ -1,3 +1,6 @@
+import calendar
+from collections import defaultdict
+from datetime import date
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -5,6 +8,7 @@ from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 from urllib.parse import urlencode
 
 from .forms import PostComposerForm
@@ -86,6 +90,61 @@ def filter_posts(queryset, params):
     return queryset.distinct()
 
 
+def get_requested_month(request):
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get("year", today.year))
+        month = int(request.GET.get("month", today.month))
+        if month < 1 or month > 12:
+            raise ValueError
+    except (TypeError, ValueError):
+        year = today.year
+        month = today.month
+    return year, month
+
+
+def get_adjacent_month(year, month, offset):
+    month_index = (year * 12 + (month - 1)) + offset
+    return month_index // 12, (month_index % 12) + 1
+
+
+def build_calendar_weeks(year, month, targets_by_day):
+    calendar_obj = calendar.Calendar(firstweekday=0)
+    today = timezone.localdate()
+    weeks = []
+    for week in calendar_obj.monthdatescalendar(year, month):
+        week_days = []
+        for day in week:
+            targets = targets_by_day.get(day, [])
+            week_days.append(
+                {
+                    "date": day,
+                    "day": day.day,
+                    "in_month": day.month == month,
+                    "is_today": day == today,
+                    "targets": targets[:3],
+                    "more_count": max(len(targets) - 3, 0),
+                }
+            )
+        weeks.append(week_days)
+    return weeks
+
+
+def get_month_targets(user, year, month):
+    first_day = date(year, month, 1)
+    next_year, next_month = get_adjacent_month(year, month, 1)
+    first_next_month = date(next_year, next_month, 1)
+    return (
+        PostTarget.objects.filter(
+            post__owner=user,
+            scheduled_time__date__gte=first_day,
+            scheduled_time__date__lt=first_next_month,
+        )
+        .select_related("post", "connected_profile")
+        .order_by("scheduled_time")
+    )
+
+
 @login_required
 def post_list(request):
     params = get_filter_params(request)
@@ -115,6 +174,55 @@ def post_list(request):
         else "posts/post_list.html"
     )
     return render(request, template_name, context)
+
+
+@login_required
+def calendar_view(request):
+    year, month = get_requested_month(request)
+    targets = get_month_targets(request.user, year, month)
+    targets_by_day = defaultdict(list)
+    for target in targets:
+        targets_by_day[timezone.localtime(target.scheduled_time).date()].append(target)
+
+    previous_year, previous_month = get_adjacent_month(year, month, -1)
+    next_year, next_month = get_adjacent_month(year, month, 1)
+    context = {
+        "calendar_weeks": build_calendar_weeks(year, month, targets_by_day),
+        "month_name": calendar.month_name[month],
+        "year": year,
+        "month": month,
+        "previous_year": previous_year,
+        "previous_month": previous_month,
+        "next_year": next_year,
+        "next_month": next_month,
+        "weekday_names": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    }
+    template_name = (
+        "posts/partials/calendar_grid.html"
+        if request.headers.get("HX-Request")
+        else "posts/calendar.html"
+    )
+    return render(request, template_name, context)
+
+
+@login_required
+def calendar_day_detail(request):
+    day = parse_date(request.GET.get("date", ""))
+    targets = []
+    if day:
+        targets = (
+            PostTarget.objects.filter(
+                post__owner=request.user,
+                scheduled_time__date=day,
+            )
+            .select_related("post", "connected_profile")
+            .order_by("scheduled_time")
+        )
+    return render(
+        request,
+        "posts/partials/calendar_day_detail.html",
+        {"day": day, "targets": targets},
+    )
 
 
 @login_required

@@ -1,0 +1,106 @@
+{% extends "layout/dashboard_base.html" %}
+
+{% block title %}New Post | Publishque{% endblock %}
+
+{% block dashboard_content %}
+<section class="mx-auto max-w-3xl rounded bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div>
+        <h1 class="text-2xl font-semibold text-primary">New Post</h1>
+        <p class="mt-1 text-sm text-slate-600">Compose once, then schedule it across connected profiles.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="mt-6 space-y-6" data-post-composer-form>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div>
+            <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-slate-900">Content</label>
+            <div class="mt-1">{{ form.content }}</div>
+            {% for error in form.content.errors %}
+                <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div>
+            <label for="{{ form.media.id_for_label }}" class="block text-sm font-medium text-slate-900">Media</label>
+            <div class="mt-1">{{ form.media }}</div>
+            {% for error in form.media.errors %}
+                <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <fieldset>
+            <legend class="text-sm font-medium text-slate-900">Connected profiles</legend>
+            {% if profiles_by_platform %}
+                <div class="mt-3 space-y-4">
+                    {% for platform, profiles in profiles_by_platform %}
+                        <div class="rounded border border-slate-200 p-4">
+                            <p class="text-sm font-semibold text-primary">{{ platform }}</p>
+                            <div class="mt-3 space-y-2">
+                                {% for profile in profiles %}
+                                    <label class="flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="connected_profiles" value="{{ profile.pk }}" class="rounded border-slate-300 text-primary">
+                                        <span>{{ profile.display_name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mt-2 rounded bg-slate-50 p-3 text-sm text-slate-600">Connect a profile before scheduling posts.</p>
+            {% endif %}
+            {% for error in form.connected_profiles.errors %}
+                <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+            {% endfor %}
+        </fieldset>
+
+        <div>
+            <label for="{{ form.scheduled_time.id_for_label }}" class="block text-sm font-medium text-slate-900">Scheduled time</label>
+            <div class="mt-1">{{ form.scheduled_time }}</div>
+            {% for error in form.scheduled_time.errors %}
+                <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="rounded bg-accent px-4 py-2 text-sm font-semibold text-white">
+                Schedule Post
+            </button>
+            <a href="{% url 'posts:list' %}" class="rounded border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
+                Cancel
+            </a>
+        </div>
+    </form>
+</section>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.querySelector("[data-post-composer-form]");
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener("submit", (event) => {
+            const checkedProfile = form.querySelector("input[name='connected_profiles']:checked");
+            const scheduledInput = form.querySelector("input[name='scheduled_time']");
+
+            if (!checkedProfile) {
+                event.preventDefault();
+                alert("Select at least one connected profile.");
+                return;
+            }
+
+            if (scheduledInput && scheduledInput.value) {
+                const scheduledTime = new Date(scheduledInput.value);
+                if (scheduledTime <= new Date()) {
+                    event.preventDefault();
+                    alert("Scheduled time must be in the future.");
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

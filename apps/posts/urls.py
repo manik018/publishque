@@ -6,5 +6,6 @@ from . import views
 app_name = "posts"
 
 urlpatterns = [
-    path("", views.coming_soon, name="coming_soon"),
+    path("", views.post_list, name="list"),
+    path("new/", views.new_post, name="new"),
 ]

@@ -1,4 +1,6 @@
 """URL configuration for Publishque."""
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
@@ -14,3 +16,6 @@ urlpatterns = [
     path("settings/", settings_coming_soon, name="settings"),
     path("dashboard/", dashboard, name="dashboard"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

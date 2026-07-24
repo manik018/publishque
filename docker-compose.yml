@@ -11,8 +11,43 @@ services:
     environment:
       DATABASE_URL: postgres://publishque:publishque@db:5432/publishque
       DJANGO_SETTINGS_MODULE: config.settings.dev
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
     depends_on:
       - db
+      - redis
+
+  celery-worker:
+    build: .
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://publishque:publishque@db:5432/publishque
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://publishque:publishque@db:5432/publishque
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
 
   db:
     image: postgres:16-alpine
@@ -24,6 +59,11 @@ services:
       POSTGRES_PASSWORD: publishque
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:

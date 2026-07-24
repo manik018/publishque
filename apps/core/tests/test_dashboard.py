@@ -1,7 +1,9 @@
 import pytest
 from allauth.socialaccount.models import SocialAccount
 from django.urls import reverse
+from django.utils import timezone
 
+from apps.posts.models import Post, PostTarget
 from apps.profiles.models import ConnectedProfile
 
 
@@ -28,6 +30,12 @@ def test_dashboard_loads_for_authenticated_user_and_shows_profile_count(
         display_name="Dashboard Pins",
         platform_account_id="pin-dashboard",
     )
+    post = Post.objects.create(owner=user, content="Scheduled dashboard post")
+    PostTarget.objects.create(
+        post=post,
+        connected_profile=user.connected_profiles.get(),
+        scheduled_time=timezone.now() + timezone.timedelta(hours=1),
+    )
     client.force_login(user)
 
     response = client.get(reverse("dashboard"))
@@ -46,7 +54,7 @@ def test_dashboard_redirects_to_login_when_not_authenticated(client):
     assert response.url == f"{reverse('accounts:login')}?next={reverse('dashboard')}"
 
 
-def test_posts_placeholder_loads_for_authenticated_user(client, django_user_model):
+def test_posts_page_loads_for_authenticated_user(client, django_user_model):
     user = django_user_model.objects.create_user(
         email="posts@example.com",
         full_name="Posts User",
@@ -54,10 +62,10 @@ def test_posts_placeholder_loads_for_authenticated_user(client, django_user_mode
     )
     client.force_login(user)
 
-    response = client.get(reverse("posts:coming_soon"))
+    response = client.get(reverse("posts:list"))
 
     assert response.status_code == 200
-    assert "Posts &amp; Scheduler" in response.content.decode()
+    assert "Posts & Scheduler" in response.content.decode()
 
 
 def test_settings_placeholder_loads_for_authenticated_user(client, django_user_model):

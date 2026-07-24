@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.staticfiles",
     "django_htmx",
+    "django_celery_beat",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -100,6 +101,8 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Local media storage for development. Move uploads to S3-compatible storage
+# before production use.
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -133,3 +136,11 @@ SOCIALACCOUNT_PROVIDERS = {
         },
     },
 }
+
+REDIS_URL = config("REDIS_URL", default="redis://redis:6379/0")
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=REDIS_URL)
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=REDIS_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE

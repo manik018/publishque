@@ -9,6 +9,7 @@ from django.utils import timezone
 logger = logging.getLogger("publishque.profiles.services")
 PINTEREST_TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 PINTEREST_BOARDS_URL = "https://api.pinterest.com/v5/boards"
+FACEBOOK_PAGES_URL = "https://graph.facebook.com/v19.0/me/accounts"
 
 
 class PinterestTokenError(Exception):
@@ -16,6 +17,10 @@ class PinterestTokenError(Exception):
 
 
 class PinterestBoardFetchError(Exception):
+    pass
+
+
+class FacebookPageFetchError(Exception):
     pass
 
 
@@ -96,3 +101,47 @@ def fetch_pinterest_boards(connected_profile):
         for item in items
         if item.get("id")
     ]
+
+
+def fetch_facebook_pages(social_account):
+    try:
+        social_token = SocialToken.objects.get(account=social_account)
+    except SocialToken.DoesNotExist as exc:
+        raise FacebookPageFetchError(
+            "Facebook token not found. Reconnect the account."
+        ) from exc
+
+    response = requests.get(
+        FACEBOOK_PAGES_URL,
+        params={
+            "access_token": social_token.token,
+            "fields": "id,name,access_token,picture",
+        },
+        timeout=15,
+    )
+    if not response.ok:
+        logger.warning(
+            "Facebook page fetch failed for social account %s: %s",
+            social_account.pk,
+            response.text,
+        )
+        raise FacebookPageFetchError(
+            "Could not load Facebook Pages. Reconnect the account and try again."
+        )
+
+    pages = []
+    for item in response.json().get("data", []):
+        page_id = item.get("id")
+        access_token = item.get("access_token")
+        if not page_id or not access_token:
+            continue
+        picture = item.get("picture", {}).get("data", {})
+        pages.append(
+            {
+                "id": page_id,
+                "name": item.get("name", "Untitled Page"),
+                "access_token": access_token,
+                "picture_url": picture.get("url", ""),
+            }
+        )
+    return pages

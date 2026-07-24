@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.facebook",
     "allauth.socialaccount.providers.pinterest",
     "apps.accounts.apps.AccountsConfig",
     "apps.profiles.apps.ProfilesConfig",
@@ -129,7 +130,21 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_ADAPTER = "apps.profiles.adapters.PublishqueSocialAccountAdapter"
 SOCIALACCOUNT_PROVIDERS = {
+    "facebook": {
+        "APP": {
+            "client_id": config("FACEBOOK_CLIENT_ID", default=""),
+            "secret": config("FACEBOOK_CLIENT_SECRET", default=""),
+            "key": "",
+        },
+        "SCOPE": [
+            "pages_show_list",
+            "pages_read_engagement",
+            "pages_manage_posts",
+            "public_profile",
+        ],
+    },
     "pinterest": {
         "APP": {
             "client_id": config("PINTEREST_CLIENT_ID", default=""),

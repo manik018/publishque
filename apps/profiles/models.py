@@ -15,13 +15,14 @@ class ConnectedProfile(models.Model):
         related_name="connected_profiles",
     )
     platform = models.CharField(max_length=20, choices=Platform.choices)
-    social_account = models.OneToOneField(
+    social_account = models.ForeignKey(
         "socialaccount.SocialAccount",
         on_delete=models.CASCADE,
-        related_name="connected_profile",
+        related_name="connected_profiles",
     )
     display_name = models.CharField(max_length=255)
     platform_account_id = models.CharField(max_length=255)
+    page_access_token = models.CharField(max_length=500, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     connected_at = models.DateTimeField(auto_now_add=True)
 

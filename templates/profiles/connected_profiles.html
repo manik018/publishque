@@ -11,9 +11,14 @@
             <h1 class="text-2xl font-semibold">Connected Profiles</h1>
             <p class="mt-1 text-sm text-slate-600">Manage the social accounts Publishque can publish to.</p>
         </div>
-        <a href="{% provider_login_url 'pinterest' process='connect' %}" class="btn-accent">
-            Connect Pinterest Account
-        </a>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% provider_login_url 'facebook' process='connect' %}" class="btn-primary">
+                Connect Facebook Account
+            </a>
+            <a href="{% provider_login_url 'pinterest' process='connect' %}" class="btn-accent">
+                Connect Pinterest Account
+            </a>
+        </div>
     </div>
 
     {% if connected_profiles %}
@@ -29,7 +34,7 @@
                             </div>
                         </div>
                         <span class="rounded bg-accent/10 px-2 py-1 text-xs font-medium text-accent">
-                            Pinterest
+                            {{ profile.get_platform_display }}
                         </span>
                     </div>
                     <dl class="mt-4 space-y-2 text-sm text-slate-600">
@@ -57,10 +62,15 @@
                 </svg>
             </div>
             <h2 class="mt-6 text-xl font-semibold text-primary">Connect your first profile</h2>
-            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Start with Pinterest so Publishque can prepare scheduled posts for the right audience.</p>
-            <a href="{% provider_login_url 'pinterest' process='connect' %}" class="btn-primary mt-5">
-                Connect Pinterest
-            </a>
+            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Start with Facebook or Pinterest so Publishque can prepare scheduled posts for the right audience.</p>
+            <div class="mt-5 flex flex-wrap justify-center gap-3">
+                <a href="{% provider_login_url 'facebook' process='connect' %}" class="btn-primary">
+                    Connect Facebook
+                </a>
+                <a href="{% provider_login_url 'pinterest' process='connect' %}" class="btn-accent">
+                    Connect Pinterest
+                </a>
+            </div>
         </div>
     {% endif %}
 </section>

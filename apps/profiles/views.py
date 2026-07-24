@@ -4,7 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import ConnectedProfile
-from .services import PinterestBoardFetchError, PinterestTokenError, fetch_pinterest_boards
+from .services import (
+    FacebookPageFetchError,
+    PinterestBoardFetchError,
+    PinterestTokenError,
+    fetch_facebook_pages,
+    fetch_pinterest_boards,
+)
 
 
 @login_required
@@ -33,7 +39,9 @@ def disconnect_profile(request, pk):
         platform = connected_profile.get_platform_display()
         display_name = connected_profile.display_name
         social_account = connected_profile.social_account
-        SocialAccount.objects.filter(pk=social_account.pk).delete()
+        connected_profile.delete()
+        if not ConnectedProfile.objects.filter(social_account=social_account).exists():
+            SocialAccount.objects.filter(pk=social_account.pk).delete()
         messages.success(request, f"{display_name} was disconnected from {platform}.")
         return redirect("profiles:connected_profiles")
 
@@ -66,5 +74,77 @@ def pinterest_board_options(request, pk):
             "connected_profile": connected_profile,
             "boards": boards,
             "error": error,
+        },
+    )
+
+
+def connect_facebook_page(user, social_account, page):
+    connected_profile, created = ConnectedProfile.objects.update_or_create(
+        user=user,
+        platform=ConnectedProfile.Platform.FACEBOOK,
+        platform_account_id=page["id"],
+        defaults={
+            "social_account": social_account,
+            "display_name": page["name"],
+            "page_access_token": page["access_token"],
+            "is_active": True,
+        },
+    )
+    return connected_profile, created
+
+
+@login_required
+def facebook_select_page(request):
+    social_account = (
+        SocialAccount.objects.filter(user=request.user, provider="facebook")
+        .order_by("-id")
+        .first()
+    )
+    if social_account is None:
+        messages.error(request, "Connect Facebook before selecting a Page.")
+        return redirect("profiles:connected_profiles")
+
+    try:
+        pages = fetch_facebook_pages(social_account)
+    except FacebookPageFetchError as exc:
+        messages.error(request, str(exc))
+        return redirect("profiles:connected_profiles")
+
+    if request.method == "POST":
+        page_id = request.POST.get("page_id", "")
+        selected_page = next((page for page in pages if page["id"] == page_id), None)
+        if selected_page is None:
+            messages.error(request, "Select a valid Facebook Page to connect.")
+        else:
+            connected_profile, created = connect_facebook_page(
+                request.user,
+                social_account,
+                selected_page,
+            )
+            action = "connected" if created else "updated"
+            messages.success(
+                request,
+                f"{connected_profile.display_name} was {action} for Facebook.",
+            )
+            return redirect("profiles:connected_profiles")
+
+    elif len(pages) == 1:
+        connected_profile, created = connect_facebook_page(
+            request.user,
+            social_account,
+            pages[0],
+        )
+        action = "connected" if created else "updated"
+        messages.success(
+            request,
+            f"{connected_profile.display_name} was {action} for Facebook.",
+        )
+        return redirect("profiles:connected_profiles")
+
+    return render(
+        request,
+        "profiles/facebook_select_page.html",
+        {
+            "pages": pages,
         },
     )

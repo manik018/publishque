@@ -5,8 +5,10 @@ from django.utils import timezone
 
 from apps.profiles.models import ConnectedProfile
 from apps.profiles.services import (
+    FACEBOOK_PAGES_URL,
     PINTEREST_BOARDS_URL,
     PINTEREST_TOKEN_URL,
+    fetch_facebook_pages,
     fetch_pinterest_boards,
     get_valid_pinterest_token,
 )
@@ -116,4 +118,43 @@ def test_fetch_pinterest_boards_returns_parsed_board_list(django_user_model):
 
     assert fetch_pinterest_boards(connected_profile) == [
         {"id": "board-1", "name": "Launch Pins"}
+    ]
+
+
+@responses.activate
+def test_fetch_facebook_pages_returns_parsed_page_list(django_user_model):
+    user = django_user_model.objects.create_user(
+        email="facebook-pages@example.com",
+        full_name="Facebook Pages User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="facebook",
+        uid="fb-user",
+    )
+    SocialToken.objects.create(account=social_account, token="user-access-token")
+    responses.add(
+        responses.GET,
+        FACEBOOK_PAGES_URL,
+        json={
+            "data": [
+                {
+                    "id": "page-1",
+                    "name": "Launch Page",
+                    "access_token": "page-access-token",
+                    "picture": {"data": {"url": "https://example.com/page.jpg"}},
+                }
+            ]
+        },
+        status=200,
+    )
+
+    assert fetch_facebook_pages(social_account) == [
+        {
+            "id": "page-1",
+            "name": "Launch Page",
+            "access_token": "page-access-token",
+            "picture_url": "https://example.com/page.jpg",
+        }
     ]

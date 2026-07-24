@@ -36,3 +36,18 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.get_level_display()}: {self.title}"
+
+
+class NotificationPreference(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notification_preference",
+    )
+    email_on_post_success = models.BooleanField(default=False)
+    email_on_post_failure = models.BooleanField(default=True)
+    in_app_on_post_success = models.BooleanField(default=True)
+    in_app_on_post_failure = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Notification preferences for {self.user.email}"

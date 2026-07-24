@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 
-from apps.notifications.models import Notification
+from apps.notifications.models import Notification, NotificationPreference
 
 from .adapters import get_adapter_for_platform
 from .models import PostTarget
@@ -21,38 +21,55 @@ def summarize_error(exc):
 
 def create_success_notification(post_target):
     platform = post_target.connected_profile.get_platform_display()
-    Notification.objects.create(
-        user=post_target.post.owner,
-        title="Post published",
-        message=f"Your post to {platform} was published successfully.",
-        level=Notification.Level.SUCCESS,
-        related_post_target=post_target,
-    )
+    user = post_target.post.owner
+    preferences, _ = NotificationPreference.objects.get_or_create(user=user)
+    message = f"Your post to {platform} was published successfully."
+    if preferences.in_app_on_post_success:
+        Notification.objects.create(
+            user=user,
+            title="Post published",
+            message=message,
+            level=Notification.Level.SUCCESS,
+            related_post_target=post_target,
+        )
+    if preferences.email_on_post_success:
+        send_mail(
+            subject=f"Publishque published your post to {platform}",
+            message=message,
+            from_email=None,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
 
 
 def create_failure_notification(post_target, error_summary):
     platform = post_target.connected_profile.get_platform_display()
     attempts = settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS
-    Notification.objects.create(
-        user=post_target.post.owner,
-        title="Post failed to publish",
-        message=(
-            f"Your post to {platform} failed to publish after {attempts} "
-            f"attempts: {error_summary}"
-        ),
-        level=Notification.Level.ERROR,
-        related_post_target=post_target,
+    user = post_target.post.owner
+    preferences, _ = NotificationPreference.objects.get_or_create(user=user)
+    message = (
+        f"Your post to {platform} failed to publish after {attempts} "
+        f"attempts: {error_summary}"
     )
-    send_mail(
-        subject=f"Publishque could not publish your post to {platform}",
-        message=(
-            f"Your post to {platform} failed to publish after {attempts} "
-            f"attempts.\n\nError: {error_summary}\n\nReview your posts at /posts/."
-        ),
-        from_email=None,
-        recipient_list=[post_target.post.owner.email],
-        fail_silently=True,
-    )
+    if preferences.in_app_on_post_failure:
+        Notification.objects.create(
+            user=user,
+            title="Post failed to publish",
+            message=message,
+            level=Notification.Level.ERROR,
+            related_post_target=post_target,
+        )
+    if preferences.email_on_post_failure:
+        send_mail(
+            subject=f"Publishque could not publish your post to {platform}",
+            message=(
+                f"Your post to {platform} failed to publish after {attempts} "
+                f"attempts.\n\nError: {error_summary}\n\nReview your posts at /posts/."
+            ),
+            from_email=None,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
 
 
 @shared_task

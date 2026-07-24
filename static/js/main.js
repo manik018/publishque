@@ -38,4 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+
+    document.querySelectorAll("[data-delete-account-form]").forEach((form) => {
+        const input = form.querySelector("[data-delete-confirm]");
+        const submit = form.querySelector("[data-delete-submit]");
+        if (!input || !submit) {
+            return;
+        }
+
+        input.addEventListener("input", () => {
+            submit.disabled = input.value !== "DELETE";
+        });
+    });
 });

@@ -56,3 +56,29 @@ class EmailAuthenticationForm(AuthenticationForm):
             self.confirm_login_allowed(self.user_cache)
 
         return self.cleaned_data
+
+
+class ProfileSettingsForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("full_name", "email")
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update(
+                {
+                    "class": "block w-full rounded border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
+                }
+            )
+
+    def clean_email(self):
+        email = User.objects.normalize_email(self.cleaned_data["email"])
+        if (
+            User.objects.filter(email__iexact=email)
+            .exclude(pk=self.user.pk)
+            .exists()
+        ):
+            raise ValidationError("A user with this email already exists.")
+        return email

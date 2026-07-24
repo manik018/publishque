@@ -68,7 +68,7 @@ def test_posts_page_loads_for_authenticated_user(client, django_user_model):
     assert "Posts & Scheduler" in response.content.decode()
 
 
-def test_settings_placeholder_loads_for_authenticated_user(client, django_user_model):
+def test_settings_hub_redirects_to_profile_settings(client, django_user_model):
     user = django_user_model.objects.create_user(
         email="settings@example.com",
         full_name="Settings User",
@@ -78,5 +78,5 @@ def test_settings_placeholder_loads_for_authenticated_user(client, django_user_m
 
     response = client.get(reverse("settings"))
 
-    assert response.status_code == 200
-    assert "Settings" in response.content.decode()
+    assert response.status_code == 302
+    assert response.url == reverse("settings_profile")

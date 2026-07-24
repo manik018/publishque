@@ -1,0 +1,27 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Notification Settings | Publishque{% endblock %}
+
+{% block settings_content %}
+<form method="post" class="rounded bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    {% csrf_token %}
+    <h2 class="text-lg font-semibold text-primary">Notification preferences</h2>
+    <p class="mt-1 text-sm text-slate-600">Choose how Publishque should notify you about publishing outcomes.</p>
+
+    <div class="mt-6 space-y-4">
+        {% for field in form %}
+            <label class="flex items-center justify-between gap-4 rounded border border-slate-200 p-4">
+                <span>
+                    <span class="block text-sm font-semibold text-slate-900">{{ field.label }}</span>
+                    {% for error in field.errors %}<span class="mt-1 block text-sm text-red-700">{{ error }}</span>{% endfor %}
+                </span>
+                <span class="relative inline-flex items-center">
+                    {{ field }}
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="mt-6 rounded bg-accent px-4 py-2 text-sm font-semibold text-white">Save preferences</button>
+</form>
+{% endblock %}

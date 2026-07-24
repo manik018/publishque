@@ -25,15 +25,3 @@ def dashboard(request):
             "published_posts_count": published_posts_count,
         },
     )
-
-
-@login_required
-def settings_coming_soon(request):
-    return render(
-        request,
-        "core/coming_soon.html",
-        {
-            "page_title": "Settings",
-            "message": "Profile, workspace, and billing preferences will live here soon.",
-        },
-    )

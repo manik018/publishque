@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.notifications.models import Notification
+from apps.notifications.models import NotificationPreference
 from apps.posts.admin import PostTargetAdmin
 from apps.posts.models import Post, PostTarget
 from apps.posts.tasks import check_scheduled_posts
@@ -640,6 +641,40 @@ def test_check_scheduled_posts_permanent_failure_creates_notification_and_email(
     assert "failed to publish after 3 attempts" in notification.message
     assert len(mailoutbox) == 1
     assert "could not publish" in mailoutbox[0].subject
+
+
+def test_check_scheduled_posts_respects_failure_email_preference(
+    django_user_model, settings, mailoutbox
+):
+    settings.PUBLISHQUE_MAX_RETRY_ATTEMPTS = 3
+    user = django_user_model.objects.create_user(
+        email="failure-prefs@example.com",
+        full_name="Failure Prefs User",
+        password="StrongPass123!",
+    )
+    NotificationPreference.objects.update_or_create(
+        user=user,
+        defaults={
+            "email_on_post_failure": False,
+            "in_app_on_post_failure": True,
+        },
+    )
+    profile = create_connected_profile(user, "failure-prefs-pin", "Failure Prefs Pins")
+    post = Post.objects.create(owner=user, content="Failure preference post")
+    post_target = PostTarget.objects.create(
+        post=post,
+        connected_profile=profile,
+        scheduled_time=timezone.now() - timezone.timedelta(minutes=1),
+        retry_count=2,
+    )
+    adapter = Mock()
+    adapter.publish.side_effect = RuntimeError("Pinterest unavailable")
+
+    with patch("apps.posts.tasks.get_adapter_for_platform", return_value=adapter):
+        check_scheduled_posts()
+
+    assert Notification.objects.filter(related_post_target=post_target).exists()
+    assert len(mailoutbox) == 0
 
 
 def test_admin_retry_action_resets_failed_posts(rf, django_user_model):

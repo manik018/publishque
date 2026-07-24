@@ -4,7 +4,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from apps.core.views import dashboard, settings_coming_soon
+from apps.accounts import settings_views
+from apps.core.views import dashboard
 
 
 urlpatterns = [
@@ -14,7 +15,20 @@ urlpatterns = [
     path("profiles/", include("apps.profiles.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("posts/", include("apps.posts.urls")),
-    path("settings/", settings_coming_soon, name="settings"),
+    path("settings/", settings_views.settings_hub, name="settings"),
+    path("settings/profile/", settings_views.profile_settings, name="settings_profile"),
+    path("settings/security/", settings_views.security_settings, name="settings_security"),
+    path(
+        "settings/notifications/",
+        settings_views.notification_settings,
+        name="settings_notifications",
+    ),
+    path(
+        "settings/verify-email/<path:token>/",
+        settings_views.verify_email,
+        name="settings_email_verify",
+    ),
+    path("account-deleted/", settings_views.account_deleted, name="account_deleted"),
     path("dashboard/", dashboard, name="dashboard"),
 ]
 

@@ -1,0 +1,7 @@
+<aside class="rounded bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:w-64">
+    <nav class="space-y-1">
+        <a href="{% url 'settings_profile' %}" class="block rounded px-3 py-2 text-sm font-semibold {% if active_settings_section == 'profile' %}bg-primary text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">Profile</a>
+        <a href="{% url 'settings_security' %}" class="block rounded px-3 py-2 text-sm font-semibold {% if active_settings_section == 'security' %}bg-primary text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">Security</a>
+        <a href="{% url 'settings_notifications' %}" class="block rounded px-3 py-2 text-sm font-semibold {% if active_settings_section == 'notifications' %}bg-primary text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">Notifications</a>
+    </nav>
+</aside>

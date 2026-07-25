@@ -47,7 +47,7 @@
                         {% for target in post.targets.all %}
                             <span class="inline-flex items-center gap-2 rounded px-2.5 py-1 text-xs font-semibold {% if target.status == 'pending' %}bg-slate-100 text-slate-700{% elif target.status == 'processing' %}bg-blue-100 text-blue-700{% elif target.status == 'sent' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
                                 {% platform_icon target.connected_profile.platform %}
-                                {{ target.connected_profile.display_name }}: {{ target.get_status_display }}
+                                {{ target.connected_profile.display_name }}: {{ target.get_status_display }} at {{ target.scheduled_time|date:"M j, Y g:i A" }}{% if target.sent_at %} - sent {{ target.sent_at|date:"M j, Y g:i A" }}{% endif %}
                             </span>
                         {% endfor %}
                     </div>

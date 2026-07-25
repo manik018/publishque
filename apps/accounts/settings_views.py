@@ -55,18 +55,26 @@ def profile_settings(request):
             new_email = form.cleaned_data["email"]
             email_changed = new_email != current_email
             user.full_name = form.cleaned_data["full_name"]
+            user.timezone = form.cleaned_data["timezone"]
             if email_changed:
                 user.email = current_email
                 user.pending_email = new_email
                 user.is_email_verified = False
-                user.save(update_fields=["full_name", "pending_email", "is_email_verified"])
+                user.save(
+                    update_fields=[
+                        "full_name",
+                        "timezone",
+                        "pending_email",
+                        "is_email_verified",
+                    ]
+                )
                 send_email_verification(request, user, new_email)
                 messages.success(
                     request,
                     "Profile updated. Please verify your new email address.",
                 )
             else:
-                user.save(update_fields=["full_name"])
+                user.save(update_fields=["full_name", "timezone"])
                 messages.success(request, "Profile updated successfully.")
             return redirect("settings_profile")
     else:

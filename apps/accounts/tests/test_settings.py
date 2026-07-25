@@ -26,6 +26,7 @@ def test_profile_update_sets_pending_email_and_sends_verification_email(
         {
             "full_name": "New Name",
             "email": "new@example.com",
+            "timezone": "Asia/Dhaka",
         },
     )
 
@@ -38,6 +39,38 @@ def test_profile_update_sets_pending_email_and_sends_verification_email(
     assert user.is_email_verified is False
     assert len(mailoutbox) == 1
     assert "Verify your new Publishque email address" in mailoutbox[0].subject
+
+
+def test_user_timezone_defaults_to_asia_dhaka(django_user_model):
+    user = django_user_model.objects.create_user(
+        email="default-tz@example.com",
+        full_name="Default Timezone User",
+        password="StrongPass123!",
+    )
+
+    assert user.timezone == "Asia/Dhaka"
+
+
+def test_profile_update_saves_timezone(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="timezone-settings@example.com",
+        full_name="Timezone Settings User",
+        password="StrongPass123!",
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("settings_profile"),
+        {
+            "full_name": "Timezone Settings User",
+            "email": "timezone-settings@example.com",
+            "timezone": "America/New_York",
+        },
+    )
+
+    user.refresh_from_db()
+    assert response.status_code == 302
+    assert user.timezone == "America/New_York"
 
 
 def test_password_change_keeps_user_logged_in(client, django_user_model):

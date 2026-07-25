@@ -74,6 +74,9 @@ def create_failure_notification(post_target, error_summary):
 
 @shared_task
 def check_scheduled_posts():
+    # scheduled_time is stored as an aware UTC value with USE_TZ=True, and
+    # timezone.now() returns the same kind of value. Per-user timezones only
+    # affect request-time parsing/rendering, so the scheduler stays timezone-neutral.
     due_targets = PostTarget.objects.select_related(
         "post",
         "connected_profile",

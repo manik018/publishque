@@ -61,7 +61,7 @@ class EmailAuthenticationForm(AuthenticationForm):
 class ProfileSettingsForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ("full_name", "email")
+        fields = ("full_name", "email", "timezone")
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")

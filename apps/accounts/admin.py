@@ -13,16 +13,17 @@ class UserAdmin(DjangoUserAdmin):
         "is_active",
         "is_staff",
         "is_email_verified",
+        "timezone",
         "date_joined",
     )
-    list_filter = ("is_active", "is_staff", "is_email_verified", "date_joined")
+    list_filter = ("is_active", "is_staff", "is_email_verified", "timezone", "date_joined")
     search_fields = ("email", "full_name")
     ordering = ("email",)
     readonly_fields = ("date_joined", "last_login")
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal info", {"fields": ("full_name",)}),
+        ("Personal info", {"fields": ("full_name", "timezone")}),
         (
             "Permissions",
             {
@@ -51,6 +52,7 @@ class UserAdmin(DjangoUserAdmin):
                     "is_active",
                     "is_staff",
                     "is_email_verified",
+                    "timezone",
                 ),
             },
         ),

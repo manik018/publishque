@@ -24,6 +24,12 @@
                 <div class="mt-1">{{ form.email }}</div>
                 {% for error in form.email.errors %}<p class="mt-1 text-sm text-red-700">{{ error }}</p>{% endfor %}
             </div>
+            <div>
+                <label for="{{ form.timezone.id_for_label }}" class="block text-sm font-medium text-slate-900">Timezone</label>
+                <div class="mt-1">{{ form.timezone }}</div>
+                <p class="mt-1 text-sm text-slate-500">Current timezone: {{ request.user.timezone }}</p>
+                {% for error in form.timezone.errors %}<p class="mt-1 text-sm text-red-700">{{ error }}</p>{% endfor %}
+            </div>
         </div>
         <button type="submit" class="btn-accent mt-5">Save profile</button>
     </form>
@@ -44,6 +50,10 @@
                         <span class="rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700">Not verified</span>
                     {% endif %}
                 </dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-slate-500">Timezone</dt>
+                <dd class="mt-1 text-sm text-slate-900">{{ request.user.timezone }}</dd>
             </div>
         </dl>
     </section>

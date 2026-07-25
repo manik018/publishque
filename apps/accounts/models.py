@@ -4,6 +4,29 @@ from django.db import models
 from django.utils import timezone
 
 
+USER_TIMEZONE_CHOICES = [
+    ("Asia/Dhaka", "Asia/Dhaka"),
+    ("UTC", "UTC"),
+    ("America/New_York", "America/New_York"),
+    ("America/Chicago", "America/Chicago"),
+    ("America/Denver", "America/Denver"),
+    ("America/Los_Angeles", "America/Los_Angeles"),
+    ("America/Toronto", "America/Toronto"),
+    ("America/Sao_Paulo", "America/Sao_Paulo"),
+    ("Europe/London", "Europe/London"),
+    ("Europe/Paris", "Europe/Paris"),
+    ("Europe/Berlin", "Europe/Berlin"),
+    ("Africa/Cairo", "Africa/Cairo"),
+    ("Africa/Johannesburg", "Africa/Johannesburg"),
+    ("Asia/Dubai", "Asia/Dubai"),
+    ("Asia/Kolkata", "Asia/Kolkata"),
+    ("Asia/Singapore", "Asia/Singapore"),
+    ("Asia/Tokyo", "Asia/Tokyo"),
+    ("Australia/Sydney", "Australia/Sydney"),
+    ("Pacific/Auckland", "Pacific/Auckland"),
+]
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -42,6 +65,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
     is_email_verified = models.BooleanField(default=False)
+    timezone = models.CharField(
+        max_length=64,
+        choices=USER_TIMEZONE_CHOICES,
+        default="Asia/Dhaka",
+    )
 
     objects = UserManager()
 

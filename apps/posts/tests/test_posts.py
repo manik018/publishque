@@ -576,6 +576,54 @@ def test_composer_allows_facebook_target_without_media(client, django_user_model
     assert target.board_id is None
 
 
+def test_composer_interprets_datetime_local_in_user_timezone(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="dhaka-composer@example.com",
+        full_name="Dhaka Composer User",
+        password="StrongPass123!",
+        timezone="Asia/Dhaka",
+    )
+    profile = create_profile_for_platform(
+        user,
+        ConnectedProfile.Platform.FACEBOOK,
+        "dhaka-facebook-page",
+    )
+    client.force_login(user)
+
+    with patch(
+        "apps.posts.forms.timezone.now",
+        return_value=timezone.datetime(
+            2026,
+            7,
+            25,
+            12,
+            0,
+            tzinfo=dt_timezone.utc,
+        ),
+    ):
+        response = client.post(
+            reverse("posts:new"),
+            {
+                "content": "A Dhaka-local scheduled post",
+                "connected_profiles": [profile.pk],
+                "scheduled_time": "2026-07-25T23:18",
+            },
+        )
+
+    assert response.status_code == 302
+    target = PostTarget.objects.get(post__owner=user)
+    assert target.scheduled_time == timezone.datetime(
+        2026,
+        7,
+        25,
+        17,
+        18,
+        tzinfo=dt_timezone.utc,
+    )
+
+
 def test_check_scheduled_posts_publishes_due_targets(django_user_model):
     user = django_user_model.objects.create_user(
         email="due@example.com",
@@ -604,6 +652,38 @@ def test_check_scheduled_posts_publishes_due_targets(django_user_model):
     notification = Notification.objects.get(related_post_target=post_target)
     assert notification.level == Notification.Level.SUCCESS
     assert "published successfully" in notification.message
+
+
+def test_check_scheduled_posts_uses_utc_storage_regardless_of_user_timezone(
+    django_user_model,
+):
+    user = django_user_model.objects.create_user(
+        email="scheduler-timezone@example.com",
+        full_name="Scheduler Timezone User",
+        password="StrongPass123!",
+        timezone="America/Los_Angeles",
+    )
+    profile = create_profile_for_platform(
+        user,
+        ConnectedProfile.Platform.FACEBOOK,
+        "scheduler-facebook-page",
+    )
+    post = Post.objects.create(owner=user, content="Due regardless of display timezone")
+    post_target = PostTarget.objects.create(
+        post=post,
+        connected_profile=profile,
+        scheduled_time=timezone.now() - timezone.timedelta(minutes=1),
+    )
+    adapter = Mock()
+    adapter.publish.return_value = True
+
+    with patch("apps.posts.tasks.get_adapter_for_platform", return_value=adapter):
+        processed = check_scheduled_posts()
+
+    post_target.refresh_from_db()
+    assert processed == 1
+    assert post_target.status == PostTarget.Status.SENT
+    adapter.publish.assert_called_once()
 
 
 def test_check_scheduled_posts_retries_and_reschedules_on_adapter_error(

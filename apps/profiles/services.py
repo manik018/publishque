@@ -11,6 +11,9 @@ PINTEREST_TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 PINTEREST_BOARDS_URL = "https://api.pinterest.com/v5/boards"
 FACEBOOK_PAGES_URL = "https://graph.facebook.com/v19.0/me/accounts"
 FACEBOOK_TOKEN_EXCHANGE_URL = "https://graph.facebook.com/v19.0/oauth/access_token"
+LINKEDIN_ACLS_URL = "https://api.linkedin.com/rest/organizationalEntityAcls"
+LINKEDIN_ORGANIZATION_URL = "https://api.linkedin.com/rest/organizations/{organization_id}"
+LINKEDIN_VERSION = "202507"
 
 
 class PinterestTokenError(Exception):
@@ -23,6 +26,30 @@ class PinterestBoardFetchError(Exception):
 
 class FacebookPageFetchError(Exception):
     pass
+
+
+class LinkedInOrganizationFetchError(Exception):
+    pass
+
+
+def linkedin_headers(access_token):
+    return {
+        "Authorization": f"Bearer {access_token}",
+        "LinkedIn-Version": LINKEDIN_VERSION,
+        "X-Restli-Protocol-Version": "2.0.0",
+    }
+
+
+def get_linkedin_organization_name(data, organization_id):
+    name = data.get("localizedName")
+    if name:
+        return name
+
+    localized = data.get("name", {}).get("localized", {})
+    if localized:
+        return next(iter(localized.values()))
+
+    return f"LinkedIn Organization {organization_id}"
 
 
 def get_social_token(connected_profile):
@@ -200,3 +227,64 @@ def get_long_lived_facebook_user_token(social_account, social_token=None):
         )
     social_token.save(update_fields=["token", "expires_at"])
     return access_token
+
+
+def fetch_linkedin_organizations(social_account):
+    try:
+        social_token = SocialToken.objects.get(account=social_account)
+    except SocialToken.DoesNotExist as exc:
+        raise LinkedInOrganizationFetchError(
+            "LinkedIn token not found. Reconnect the account."
+        ) from exc
+
+    headers = linkedin_headers(social_token.token)
+    response = requests.get(
+        LINKEDIN_ACLS_URL,
+        params={
+            "q": "roleAssignee",
+            "role": "ADMINISTRATOR",
+            "state": "APPROVED",
+        },
+        headers=headers,
+        timeout=15,
+    )
+    if not response.ok:
+        logger.warning(
+            "LinkedIn organization ACL fetch failed for social account %s: %s",
+            social_account.pk,
+            response.text,
+        )
+        raise LinkedInOrganizationFetchError(
+            "Could not load LinkedIn Organizations. Reconnect the account and try again."
+        )
+
+    organizations = []
+    for item in response.json().get("elements", []):
+        organization_urn = (
+            item.get("organizationalTarget")
+            or item.get("organization")
+            or item.get("organizationalEntity")
+        )
+        if not organization_urn:
+            continue
+        organization_id = organization_urn.rsplit(":", 1)[-1]
+        organization_response = requests.get(
+            LINKEDIN_ORGANIZATION_URL.format(organization_id=organization_id),
+            headers=headers,
+            timeout=15,
+        )
+        if not organization_response.ok:
+            logger.warning(
+                "LinkedIn organization fetch failed for %s: %s",
+                organization_urn,
+                organization_response.text,
+            )
+            continue
+        data = organization_response.json()
+        organizations.append(
+            {
+                "id": organization_urn,
+                "name": get_linkedin_organization_name(data, organization_id),
+            }
+        )
+    return organizations

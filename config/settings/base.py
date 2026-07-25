@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.facebook",
+    "allauth.socialaccount.providers.linkedin_oauth2",
     "allauth.socialaccount.providers.pinterest",
     "apps.accounts.apps.AccountsConfig",
     "apps.profiles.apps.ProfilesConfig",
@@ -152,6 +153,26 @@ SOCIALACCOUNT_PROVIDERS = {
             "secret": config("PINTEREST_CLIENT_SECRET", default=""),
             "key": "",
         },
+    },
+    # django-allauth 65.x ships LinkedIn under linkedin_oauth2; these are the
+    # current OpenID/Organization scopes LinkedIn requires for Company posting.
+    "linkedin_oauth2": {
+        "APP": {
+            "client_id": config("LINKEDIN_CLIENT_ID", default=""),
+            "secret": config("LINKEDIN_CLIENT_SECRET", default=""),
+            "key": "",
+        },
+        "SCOPE": [
+            "openid",
+            "profile",
+            "email",
+            "w_organization_social",
+            "rw_organization_admin",
+        ],
+        # LinkedIn access tokens expire after roughly 60 days and refresh
+        # tokens after roughly 365 days. Programmatic refresh requires
+        # Marketing Developer Platform partner status; TODO: add refresh
+        # handling if/when Publishque has confirmed partner access.
     },
 }
 

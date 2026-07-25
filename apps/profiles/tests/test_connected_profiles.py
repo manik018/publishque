@@ -5,7 +5,12 @@ from allauth.socialaccount.signals import social_account_added
 from django.urls import reverse
 
 from apps.profiles.models import ConnectedProfile
-from apps.profiles.services import FACEBOOK_PAGES_URL, FACEBOOK_TOKEN_EXCHANGE_URL
+from apps.profiles.services import (
+    FACEBOOK_PAGES_URL,
+    FACEBOOK_TOKEN_EXCHANGE_URL,
+    LINKEDIN_ACLS_URL,
+    LINKEDIN_ORGANIZATION_URL,
+)
 
 
 pytestmark = pytest.mark.django_db
@@ -18,6 +23,28 @@ def mock_facebook_exchange(access_token="long-lived-user-token", status=200):
         json={"access_token": access_token, "expires_in": 5184000},
         status=status,
     )
+
+
+def mock_linkedin_organizations(organizations):
+    responses.add(
+        responses.GET,
+        LINKEDIN_ACLS_URL,
+        json={
+            "elements": [
+                {"organizationalTarget": organization["id"]}
+                for organization in organizations
+            ]
+        },
+        status=200,
+    )
+    for organization in organizations:
+        organization_id = organization["id"].rsplit(":", 1)[-1]
+        responses.add(
+            responses.GET,
+            LINKEDIN_ORGANIZATION_URL.format(organization_id=organization_id),
+            json={"localizedName": organization["name"]},
+            status=200,
+        )
 
 
 def test_connected_profiles_page_requires_login(client):
@@ -46,6 +73,7 @@ def test_connected_profiles_empty_state_connect_button_is_visible(
     assert response.status_code == 200
     assert "Connect your first profile" in content
     assert "Connect Facebook" in content
+    assert "Connect LinkedIn" in content
     assert "Connect Pinterest" in content
     assert "btn-primary" in content
 
@@ -65,6 +93,7 @@ def test_connected_profiles_page_shows_facebook_and_pinterest_connect_options(
 
     assert response.status_code == 200
     assert "Connect Facebook" in content
+    assert "Connect LinkedIn" in content
     assert "Connect Pinterest" in content
     assert "/social/facebook/login/" in content
     assert "/social/pinterest/login/" in content
@@ -126,6 +155,34 @@ def test_facebook_social_account_added_does_not_create_connected_profile(
     assert not ConnectedProfile.objects.filter(
         user=user,
         platform=ConnectedProfile.Platform.FACEBOOK,
+    ).exists()
+
+
+def test_linkedin_social_account_added_does_not_create_connected_profile(
+    rf, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="linkedin-signal@example.com",
+        full_name="LinkedIn Signal User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="linkedin_oauth2",
+        uid="linkedin-user",
+        extra_data={"name": "LinkedIn User"},
+    )
+    sociallogin = SocialLogin(account=social_account, user=user)
+
+    social_account_added.send(
+        sender=SocialLogin,
+        request=rf.get("/"),
+        sociallogin=sociallogin,
+    )
+
+    assert not ConnectedProfile.objects.filter(
+        user=user,
+        platform=ConnectedProfile.Platform.LINKEDIN,
     ).exists()
 
 
@@ -269,6 +326,114 @@ def test_selecting_facebook_page_creates_connected_profile_with_page_token(
     assert connected_profile.display_name == "Page Two"
     assert connected_profile.page_access_token == "token-two"
     assert connected_profile.token_obtained_at is not None
+
+
+@responses.activate
+def test_linkedin_single_org_auto_connect_creates_connected_profile(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="single-org@example.com",
+        full_name="Single Org User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="linkedin_oauth2",
+        uid="linkedin-single",
+    )
+    SocialToken.objects.create(account=social_account, token="linkedin-token")
+    mock_linkedin_organizations(
+        [{"id": "urn:li:organization:12345", "name": "Single Org"}]
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("profiles:linkedin_select_organization"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("profiles:connected_profiles")
+    connected_profile = ConnectedProfile.objects.get(
+        user=user,
+        platform=ConnectedProfile.Platform.LINKEDIN,
+        platform_account_id="urn:li:organization:12345",
+    )
+    assert connected_profile.social_account == social_account
+    assert connected_profile.display_name == "Single Org"
+    assert connected_profile.page_access_token == "linkedin-token"
+
+
+@responses.activate
+def test_linkedin_multi_org_flow_shows_selection_screen(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="multi-org@example.com",
+        full_name="Multi Org User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="linkedin_oauth2",
+        uid="linkedin-multi",
+    )
+    SocialToken.objects.create(account=social_account, token="linkedin-token")
+    mock_linkedin_organizations(
+        [
+            {"id": "urn:li:organization:12345", "name": "Org One"},
+            {"id": "urn:li:organization:67890", "name": "Org Two"},
+        ]
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("profiles:linkedin_select_organization"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Select a LinkedIn Organization" in content
+    assert "Org One" in content
+    assert "Org Two" in content
+    assert not ConnectedProfile.objects.filter(
+        user=user,
+        platform=ConnectedProfile.Platform.LINKEDIN,
+    ).exists()
+
+
+@responses.activate
+def test_selecting_linkedin_org_creates_connected_profile_with_access_token(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(
+        email="select-org@example.com",
+        full_name="Select Org User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="linkedin_oauth2",
+        uid="linkedin-select",
+    )
+    SocialToken.objects.create(account=social_account, token="linkedin-token")
+    mock_linkedin_organizations(
+        [
+            {"id": "urn:li:organization:12345", "name": "Org One"},
+            {"id": "urn:li:organization:67890", "name": "Org Two"},
+        ]
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("profiles:linkedin_select_organization"),
+        {"organization_id": "urn:li:organization:67890"},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("profiles:connected_profiles")
+    connected_profile = ConnectedProfile.objects.get(
+        user=user,
+        platform=ConnectedProfile.Platform.LINKEDIN,
+        platform_account_id="urn:li:organization:67890",
+    )
+    assert connected_profile.social_account == social_account
+    assert connected_profile.display_name == "Org Two"
+    assert connected_profile.page_access_token == "linkedin-token"
 
 
 def test_disconnect_removes_connected_profile_social_account_and_token(

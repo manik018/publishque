@@ -6,4 +6,6 @@ class PublishqueSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_connect_redirect_url(self, request, socialaccount):
         if socialaccount.provider == "facebook":
             return reverse("profiles:facebook_select_page")
+        if socialaccount.provider == "linkedin_oauth2":
+            return reverse("profiles:linkedin_select_organization")
         return reverse("profiles:connected_profiles")

@@ -1,0 +1,41 @@
+{% extends "layout/dashboard_base.html" %}
+{% load platform_icons %}
+
+{% block title %}Select LinkedIn Organization | Publishque{% endblock %}
+
+{% block dashboard_content %}
+<section class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-primary">Select a LinkedIn Organization</h1>
+        <p class="mt-1 text-sm text-slate-600">Choose which Company Page Publishque should connect for scheduling.</p>
+    </div>
+
+    {% if organizations %}
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for organization in organizations %}
+                <form method="post" class="rounded bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="organization_id" value="{{ organization.id }}">
+                    <div class="flex items-start gap-3">
+                        {% platform_icon "linkedin" %}
+                        <div>
+                            <h2 class="text-lg font-semibold text-primary">{{ organization.name }}</h2>
+                            <p class="mt-1 break-all text-xs text-slate-500">{{ organization.id }}</p>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary mt-5 w-full">Connect Organization</button>
+                </form>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+                {% platform_icon "linkedin" %}
+            </div>
+            <h2 class="mt-6 text-xl font-semibold text-primary">No LinkedIn Organizations found</h2>
+            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Publishque needs access to a LinkedIn Organization you administer before it can publish Company Page posts.</p>
+            <a href="{% url 'profiles:connected_profiles' %}" class="btn-outline mt-5">Back to profiles</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

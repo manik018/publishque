@@ -8,9 +8,12 @@ from apps.profiles.models import ConnectedProfile
 from apps.profiles.services import (
     FACEBOOK_TOKEN_EXCHANGE_URL,
     FACEBOOK_PAGES_URL,
+    LINKEDIN_ACLS_URL,
+    LINKEDIN_ORGANIZATION_URL,
     PINTEREST_BOARDS_URL,
     PINTEREST_TOKEN_URL,
     fetch_facebook_pages,
+    fetch_linkedin_organizations,
     fetch_pinterest_boards,
     get_valid_pinterest_token,
 )
@@ -220,3 +223,54 @@ def test_fetch_facebook_pages_falls_back_when_token_exchange_fails(
     assert "access_token=short-lived-token" in responses.calls[1].request.url
     warning.assert_called()
     assert "Facebook long-lived token exchange failed" in warning.call_args.args[0]
+
+
+@responses.activate
+def test_fetch_linkedin_organizations_returns_parsed_organization_list(
+    django_user_model,
+):
+    user = django_user_model.objects.create_user(
+        email="linkedin-orgs@example.com",
+        full_name="LinkedIn Orgs User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="linkedin_oauth2",
+        uid="linkedin-user",
+    )
+    SocialToken.objects.create(account=social_account, token="linkedin-token")
+    responses.add(
+        responses.GET,
+        LINKEDIN_ACLS_URL,
+        json={
+            "elements": [
+                {"organizationalTarget": "urn:li:organization:12345"},
+                {"organizationalTarget": "urn:li:organization:67890"},
+            ]
+        },
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        LINKEDIN_ORGANIZATION_URL.format(organization_id="12345"),
+        json={"localizedName": "Publishque Labs"},
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        LINKEDIN_ORGANIZATION_URL.format(organization_id="67890"),
+        json={"localizedName": "Publishque Studio"},
+        status=200,
+    )
+
+    organizations = fetch_linkedin_organizations(social_account)
+
+    assert organizations == [
+        {"id": "urn:li:organization:12345", "name": "Publishque Labs"},
+        {"id": "urn:li:organization:67890", "name": "Publishque Studio"},
+    ]
+    acl_request = responses.calls[0].request
+    assert acl_request.headers["Authorization"] == "Bearer linkedin-token"
+    assert acl_request.headers["LinkedIn-Version"] == "202507"
+    assert acl_request.headers["X-Restli-Protocol-Version"] == "2.0.0"

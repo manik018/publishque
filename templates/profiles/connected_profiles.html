@@ -15,6 +15,9 @@
             <a href="{% provider_login_url 'facebook' process='connect' %}" class="btn-primary">
                 Connect Facebook Account
             </a>
+            <a href="{% provider_login_url 'linkedin_oauth2' process='connect' %}" class="btn-outline">
+                Connect LinkedIn Account
+            </a>
             <a href="{% provider_login_url 'pinterest' process='connect' %}" class="btn-accent">
                 Connect Pinterest Account
             </a>
@@ -62,10 +65,13 @@
                 </svg>
             </div>
             <h2 class="mt-6 text-xl font-semibold text-primary">Connect your first profile</h2>
-            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Start with Facebook or Pinterest so Publishque can prepare scheduled posts for the right audience.</p>
+            <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Start with Facebook, LinkedIn, or Pinterest so Publishque can prepare scheduled posts for the right audience.</p>
             <div class="mt-5 flex flex-wrap justify-center gap-3">
                 <a href="{% provider_login_url 'facebook' process='connect' %}" class="btn-primary">
                     Connect Facebook
+                </a>
+                <a href="{% provider_login_url 'linkedin_oauth2' process='connect' %}" class="btn-outline">
+                    Connect LinkedIn
                 </a>
                 <a href="{% provider_login_url 'pinterest' process='connect' %}" class="btn-accent">
                     Connect Pinterest

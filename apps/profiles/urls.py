@@ -13,6 +13,11 @@ urlpatterns = [
         name="facebook_select_page",
     ),
     path(
+        "linkedin/select-organization/",
+        views.linkedin_select_organization,
+        name="linkedin_select_organization",
+    ),
+    path(
         "disconnect/<int:pk>/",
         views.disconnect_profile,
         name="disconnect_profile",

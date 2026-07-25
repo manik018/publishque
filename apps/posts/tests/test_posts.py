@@ -543,6 +543,39 @@ def test_composer_rejects_pinterest_target_without_media(client, django_user_mod
     assert Post.objects.filter(owner=user).count() == 0
 
 
+def test_composer_allows_facebook_target_without_media(client, django_user_model):
+    user = django_user_model.objects.create_user(
+        email="facebook-composer@example.com",
+        full_name="Facebook Composer User",
+        password="StrongPass123!",
+    )
+    profile = create_profile_for_platform(
+        user,
+        ConnectedProfile.Platform.FACEBOOK,
+        "facebook-page",
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("posts:new"),
+        {
+            "content": "A text-only Facebook post",
+            "connected_profiles": [profile.pk],
+            "scheduled_time": (
+                timezone.now() + timezone.timedelta(days=1)
+            ).strftime("%Y-%m-%dT%H:%M"),
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("posts:list")
+    post = Post.objects.get(owner=user)
+    assert post.content == "A text-only Facebook post"
+    target = post.targets.get()
+    assert target.connected_profile == profile
+    assert target.board_id is None
+
+
 def test_check_scheduled_posts_publishes_due_targets(django_user_model):
     user = django_user_model.objects.create_user(
         email="due@example.com",

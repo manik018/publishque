@@ -2,9 +2,11 @@ import pytest
 import responses
 from allauth.socialaccount.models import SocialAccount, SocialToken
 from django.utils import timezone
+from unittest.mock import patch
 
 from apps.profiles.models import ConnectedProfile
 from apps.profiles.services import (
+    FACEBOOK_TOKEN_EXCHANGE_URL,
     FACEBOOK_PAGES_URL,
     PINTEREST_BOARDS_URL,
     PINTEREST_TOKEN_URL,
@@ -122,7 +124,9 @@ def test_fetch_pinterest_boards_returns_parsed_board_list(django_user_model):
 
 
 @responses.activate
-def test_fetch_facebook_pages_returns_parsed_page_list(django_user_model):
+def test_fetch_facebook_pages_returns_parsed_page_list(django_user_model, settings):
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["client_id"] = "fb-client"
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["secret"] = "fb-secret"
     user = django_user_model.objects.create_user(
         email="facebook-pages@example.com",
         full_name="Facebook Pages User",
@@ -134,6 +138,12 @@ def test_fetch_facebook_pages_returns_parsed_page_list(django_user_model):
         uid="fb-user",
     )
     SocialToken.objects.create(account=social_account, token="user-access-token")
+    responses.add(
+        responses.GET,
+        FACEBOOK_TOKEN_EXCHANGE_URL,
+        json={"access_token": "long-lived-user-token", "expires_in": 5184000},
+        status=200,
+    )
     responses.add(
         responses.GET,
         FACEBOOK_PAGES_URL,
@@ -158,3 +168,55 @@ def test_fetch_facebook_pages_returns_parsed_page_list(django_user_model):
             "picture_url": "https://example.com/page.jpg",
         }
     ]
+    assert "fb_exchange_token=user-access-token" in responses.calls[0].request.url
+    assert "access_token=long-lived-user-token" in responses.calls[1].request.url
+    social_token = SocialToken.objects.get(account=social_account)
+    assert social_token.token == "long-lived-user-token"
+    assert social_token.expires_at > timezone.now()
+
+
+@responses.activate
+def test_fetch_facebook_pages_falls_back_when_token_exchange_fails(
+    django_user_model, settings
+):
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["client_id"] = "fb-client"
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["secret"] = "fb-secret"
+    user = django_user_model.objects.create_user(
+        email="facebook-fallback@example.com",
+        full_name="Facebook Fallback User",
+        password="StrongPass123!",
+    )
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider="facebook",
+        uid="fb-fallback",
+    )
+    SocialToken.objects.create(account=social_account, token="short-lived-token")
+    responses.add(
+        responses.GET,
+        FACEBOOK_TOKEN_EXCHANGE_URL,
+        json={"error": {"message": "Exchange temporarily failed"}},
+        status=400,
+    )
+    responses.add(
+        responses.GET,
+        FACEBOOK_PAGES_URL,
+        json={
+            "data": [
+                {
+                    "id": "fallback-page",
+                    "name": "Fallback Page",
+                    "access_token": "fallback-page-token",
+                }
+            ]
+        },
+        status=200,
+    )
+
+    with patch("apps.profiles.services.logger.warning") as warning:
+        pages = fetch_facebook_pages(social_account)
+
+    assert pages[0]["id"] == "fallback-page"
+    assert "access_token=short-lived-token" in responses.calls[1].request.url
+    warning.assert_called()
+    assert "Facebook long-lived token exchange failed" in warning.call_args.args[0]

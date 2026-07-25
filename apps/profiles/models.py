@@ -23,6 +23,7 @@ class ConnectedProfile(models.Model):
     display_name = models.CharField(max_length=255)
     platform_account_id = models.CharField(max_length=255)
     page_access_token = models.CharField(max_length=500, blank=True, null=True)
+    token_obtained_at = models.DateTimeField(auto_now_add=True, null=True)
     is_active = models.BooleanField(default=True)
     connected_at = models.DateTimeField(auto_now_add=True)
 

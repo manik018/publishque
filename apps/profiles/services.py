@@ -10,6 +10,7 @@ logger = logging.getLogger("publishque.profiles.services")
 PINTEREST_TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 PINTEREST_BOARDS_URL = "https://api.pinterest.com/v5/boards"
 FACEBOOK_PAGES_URL = "https://graph.facebook.com/v19.0/me/accounts"
+FACEBOOK_TOKEN_EXCHANGE_URL = "https://graph.facebook.com/v19.0/oauth/access_token"
 
 
 class PinterestTokenError(Exception):
@@ -111,10 +112,12 @@ def fetch_facebook_pages(social_account):
             "Facebook token not found. Reconnect the account."
         ) from exc
 
+    access_token = get_long_lived_facebook_user_token(social_account, social_token)
+
     response = requests.get(
         FACEBOOK_PAGES_URL,
         params={
-            "access_token": social_token.token,
+            "access_token": access_token,
             "fields": "id,name,access_token,picture",
         },
         timeout=15,
@@ -145,3 +148,55 @@ def fetch_facebook_pages(social_account):
             }
         )
     return pages
+
+
+def get_long_lived_facebook_user_token(social_account, social_token=None):
+    if social_token is None:
+        try:
+            social_token = SocialToken.objects.get(account=social_account)
+        except SocialToken.DoesNotExist as exc:
+            raise FacebookPageFetchError(
+                "Facebook token not found. Reconnect the account."
+            ) from exc
+
+    response = requests.get(
+        FACEBOOK_TOKEN_EXCHANGE_URL,
+        params={
+            "grant_type": "fb_exchange_token",
+            "client_id": settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"][
+                "client_id"
+            ],
+            "client_secret": settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"][
+                "secret"
+            ],
+            "fb_exchange_token": social_token.token,
+        },
+        timeout=15,
+    )
+    if not response.ok:
+        # Falling back allows Page connection to proceed when Facebook's token
+        # exchange is temporarily unavailable; publishing will still surface
+        # revoked/expired token issues through the normal retry path later.
+        logger.warning(
+            "Facebook long-lived token exchange failed for social account %s: %s",
+            social_account.pk,
+            response.text,
+        )
+        return social_token.token
+
+    access_token = response.json().get("access_token")
+    if not access_token:
+        logger.warning(
+            "Facebook long-lived token exchange returned no access token for social account %s",
+            social_account.pk,
+        )
+        return social_token.token
+
+    social_token.token = access_token
+    expires_in = response.json().get("expires_in")
+    if expires_in:
+        social_token.expires_at = timezone.now() + timezone.timedelta(
+            seconds=int(expires_in)
+        )
+    social_token.save(update_fields=["token", "expires_at"])
+    return access_token

@@ -5,10 +5,19 @@ from allauth.socialaccount.signals import social_account_added
 from django.urls import reverse
 
 from apps.profiles.models import ConnectedProfile
-from apps.profiles.services import FACEBOOK_PAGES_URL
+from apps.profiles.services import FACEBOOK_PAGES_URL, FACEBOOK_TOKEN_EXCHANGE_URL
 
 
 pytestmark = pytest.mark.django_db
+
+
+def mock_facebook_exchange(access_token="long-lived-user-token", status=200):
+    responses.add(
+        responses.GET,
+        FACEBOOK_TOKEN_EXCHANGE_URL,
+        json={"access_token": access_token, "expires_in": 5184000},
+        status=status,
+    )
 
 
 def test_connected_profiles_page_requires_login(client):
@@ -122,8 +131,10 @@ def test_facebook_social_account_added_does_not_create_connected_profile(
 
 @responses.activate
 def test_facebook_single_page_auto_connect_creates_connected_profile(
-    client, django_user_model
+    client, django_user_model, settings
 ):
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["client_id"] = "fb-client"
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["secret"] = "fb-secret"
     user = django_user_model.objects.create_user(
         email="single-page@example.com",
         full_name="Single Page User",
@@ -135,6 +146,7 @@ def test_facebook_single_page_auto_connect_creates_connected_profile(
         uid="fb-single",
     )
     SocialToken.objects.create(account=social_account, token="user-access-token")
+    mock_facebook_exchange()
     responses.add(
         responses.GET,
         FACEBOOK_PAGES_URL,
@@ -163,10 +175,15 @@ def test_facebook_single_page_auto_connect_creates_connected_profile(
     assert connected_profile.social_account == social_account
     assert connected_profile.display_name == "Single Page"
     assert connected_profile.page_access_token == "single-page-token"
+    assert connected_profile.token_obtained_at is not None
 
 
 @responses.activate
-def test_facebook_multi_page_flow_shows_selection_screen(client, django_user_model):
+def test_facebook_multi_page_flow_shows_selection_screen(
+    client, django_user_model, settings
+):
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["client_id"] = "fb-client"
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["secret"] = "fb-secret"
     user = django_user_model.objects.create_user(
         email="multi-page@example.com",
         full_name="Multi Page User",
@@ -178,6 +195,7 @@ def test_facebook_multi_page_flow_shows_selection_screen(client, django_user_mod
         uid="fb-multi",
     )
     SocialToken.objects.create(account=social_account, token="user-access-token")
+    mock_facebook_exchange()
     responses.add(
         responses.GET,
         FACEBOOK_PAGES_URL,
@@ -206,8 +224,10 @@ def test_facebook_multi_page_flow_shows_selection_screen(client, django_user_mod
 
 @responses.activate
 def test_selecting_facebook_page_creates_connected_profile_with_page_token(
-    client, django_user_model
+    client, django_user_model, settings
 ):
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["client_id"] = "fb-client"
+    settings.SOCIALACCOUNT_PROVIDERS["facebook"]["APP"]["secret"] = "fb-secret"
     user = django_user_model.objects.create_user(
         email="select-page@example.com",
         full_name="Select Page User",
@@ -219,6 +239,7 @@ def test_selecting_facebook_page_creates_connected_profile_with_page_token(
         uid="fb-select",
     )
     SocialToken.objects.create(account=social_account, token="user-access-token")
+    mock_facebook_exchange()
     responses.add(
         responses.GET,
         FACEBOOK_PAGES_URL,
@@ -247,6 +268,7 @@ def test_selecting_facebook_page_creates_connected_profile_with_page_token(
     assert connected_profile.social_account == social_account
     assert connected_profile.display_name == "Page Two"
     assert connected_profile.page_access_token == "token-two"
+    assert connected_profile.token_obtained_at is not None
 
 
 def test_disconnect_removes_connected_profile_social_account_and_token(
